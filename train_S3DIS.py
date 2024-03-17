@@ -202,7 +202,7 @@ class S3DISConfig(Config):
 
     # Do we nee to save convergence
     saving = True
-    saving_path = None
+    saving_path = "../../S3DIS.log"
 
 
 # ----------------------------------------------------------------------------------------------------------------------
