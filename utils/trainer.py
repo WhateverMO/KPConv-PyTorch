@@ -130,6 +130,11 @@ class ModelTrainer:
         ################
         # Initialization
         ################
+        
+        timeFormat = "%m-%d %H:%M"
+        now = time.localtime()
+
+        print('Start! time:'+ time.strftime(timeFormat,now))
 
         if config.saving:
             # Training log file
@@ -273,6 +278,16 @@ class ModelTrainer:
             net.eval()
             self.validation(net, val_loader, config)
             net.train()
+            
+            finish = time.localtime()
+
+            print('time:'+ time.strftime(timeFormat,finish))
+            used_time = (time.mktime(finish) - time.mktime(now))
+            used_time = time.gmtime(used_time)
+        
+            print('Used time: '+time.strftime("%dd:%H:%M:%S",used_time))
+        
+        print('Used time: '+time.strftime("%dd:%H:%M:%S",used_time))
 
         print('Finished Training')
         return
