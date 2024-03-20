@@ -7,7 +7,7 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 #
-#      Class handling S3DIS dataset.
+#      Class handling ISPRS dataset.
 #      Implements a Dataset, a Sampler, and a collate_fn
 #
 # ----------------------------------------------------------------------------------------------------------------------
@@ -50,34 +50,46 @@ from utils.config import bcolors
 #           Dataset class definition
 #       \******************************/
 
+def read_pts_file(file_path,lable = True):
+    with open(file_path, 'r') as f:
+        lines = f.readlines()
 
-class S3DISDataset(PointCloudDataset):
-    """Class to handle S3DIS dataset."""
+    points = []
+    lables = []
+    for line in lines:
+        parts = line.split()
+        point = [float(it) for it in parts[:3]]
+        points.append(point)
+        if lable:
+            lables.append(int(parts[-1]))
+    return points,lables
+
+class ISPRSDataset(PointCloudDataset):
+    """Class to handle ISPRS dataset."""
 
     def __init__(self, config, set='training', use_potentials=True, load_data=True):
         """
         This dataset is small enough to be stored in-memory, so load all point clouds here
         """
-        PointCloudDataset.__init__(self, 'S3DIS')
+        PointCloudDataset.__init__(self, 'ISPRS')
 
         ############
         # Parameters
         ############
 
         # Dict from labels to names
-        self.label_to_names = {0: 'ceiling',
-                               1: 'floor',
-                               2: 'wall',
-                               3: 'beam',
-                               4: 'column',
-                               5: 'window',
-                               6: 'door',
-                               7: 'chair',
-                               8: 'table',
-                               9: 'bookcase',
-                               10: 'sofa',
-                               11: 'board',
-                               12: 'clutter'}
+        self.label_to_names = {0: 'Powerline',
+                               1: 'Low vegetation',
+                               2: 'surface',
+                               3: 'Car',
+                               4: 'Fence',
+                               5: 'Roof',
+                               6: 'Facade',
+                               7: 'shurb',
+                               8: 'Tree'
+                               }
+        
+        self.max_label = len(self.label_to_names.keys())
 
         # Initialize a bunch of variables concerning class labels
         self.init_labels()
@@ -86,7 +98,7 @@ class S3DISDataset(PointCloudDataset):
         self.ignored_labels = np.array([])
 
         # Dataset folder
-        self.path = '../../Data/S3DIS'
+        self.path = '../../Data/ISPRS3D'
 
         # Type of task conducted on this dataset
         self.dataset_task = 'cloud_segmentation'
@@ -111,9 +123,9 @@ class S3DISDataset(PointCloudDataset):
         ply_path = join(self.path, self.train_path)
 
         # Proportion of validation scenes
-        self.cloud_names = ['Area_1', 'Area_2', 'Area_3', 'Area_4', 'Area_5', 'Area_6']
-        self.all_splits = [0, 1, 2, 3, 4, 5]
-        self.validation_split = 4
+        self.cloud_names = ['Vaihingen3D_Traininig','Vaihingen3D_EVAL_WITHOUT_REF']
+        self.all_splits = [0, 1]
+        self.validation_split = 1
 
         # Number of models used per epoch
         if self.set == 'training':
@@ -121,7 +133,7 @@ class S3DISDataset(PointCloudDataset):
         elif self.set in ['validation', 'test', 'ERF']:
             self.epoch_n = config.validation_size * config.batch_num
         else:
-            raise ValueError('Unknown set for S3DIS data: ', self.set)
+            raise ValueError('Unknown set for ISPRS data: ', self.set)
 
         # Stop data is not needed
         if not load_data:
@@ -131,7 +143,7 @@ class S3DISDataset(PointCloudDataset):
         # Prepare ply files
         ###################
 
-        self.prepare_S3DIS_ply()
+        self.prepare_ISPRS_ply()
 
         ################
         # Load ply files
@@ -147,7 +159,7 @@ class S3DISDataset(PointCloudDataset):
                 if self.all_splits[i] == self.validation_split:
                     self.files += [join(ply_path, f + '.ply')]
             else:
-                raise ValueError('Unknown set for S3DIS data: ', self.set)
+                raise ValueError('Unknown set for ISPRS data: ', self.set)
 
         if self.set == 'training':
             self.cloud_names = [f for i, f in enumerate(self.cloud_names)
@@ -373,7 +385,7 @@ class S3DISDataset(PointCloudDataset):
 
             # Get original height as additional feature
             input_features = np.hstack((input_colors, input_points[:, 2:] + center_point[:, 2:])).astype(np.float32)
-            input_features_xyz = np.hstack((input_points, input_colors, input_points[:, 2:] + center_point[:, 2:])).astype(np.float32)
+            input_features_xyz = np.hstack((input_points, input_points[:, 2:] + center_point[:, 2:], input_colors)).astype(np.float32)
 
             t += [time.time()]
 
@@ -648,7 +660,7 @@ class S3DISDataset(PointCloudDataset):
 
         return input_list
 
-    def prepare_S3DIS_ply(self):
+    def prepare_ISPRS_ply(self):
 
         print('\nPreparing ply files')
         t0 = time.time()
@@ -664,60 +676,34 @@ class S3DISDataset(PointCloudDataset):
             cloud_file = join(ply_path, cloud_name + '.ply')
             if exists(cloud_file):
                 continue
+            else:
+                # Initiate containers
+                cloud_points = np.empty((0, 3), dtype=np.float32)
+                cloud_classes = np.empty((0, 1), dtype=np.int32)
 
-            # Get rooms of the current cloud
-            cloud_folder = join(self.path, cloud_name)
-            room_folders = [join(cloud_folder, room) for room in listdir(cloud_folder) if isdir(join(cloud_folder, room))]
+                pts_file = join(self.path, cloud_name + '.pts')
+                
+                if not exists(pts_file):
+                    raise ValueError('File not found: ' + pts_file)
+                # Read pts file
+                if 'Training' in cloud_name:
+                    points, labels = read_pts_file(pts_file)
+                else:
+                    points, labels = read_pts_file(pts_file,False)
+                    labels = [self.max_label for _ in range(len(points))]
+                
+                # Convert to numpy
+                points = np.array(points, dtype=np.float32)
+                labels = np.array(labels, dtype=np.int32)
+                
+                # Stack all data
+                cloud_points = np.vstack((cloud_points, points.astype(np.float32)))
+                cloud_classes = np.vstack((cloud_classes, labels.reshape(-1, 1).astype(np.int32)))
 
-            # Initiate containers
-            cloud_points = np.empty((0, 3), dtype=np.float32)
-            cloud_colors = np.empty((0, 3), dtype=np.uint8)
-            cloud_classes = np.empty((0, 1), dtype=np.int32)
-
-            # Loop over rooms
-            for i, room_folder in enumerate(room_folders):
-
-                print('Cloud %s - Room %d/%d : %s' % (cloud_name, i+1, len(room_folders), room_folder.split('/')[-1]))
-
-                for object_name in listdir(join(room_folder, 'Annotations')):
-
-                    if object_name[-4:] == '.txt':
-
-                        # Text file containing point of the object
-                        object_file = join(room_folder, 'Annotations', object_name)
-
-                        # Object class and ID
-                        tmp = object_name[:-4].split('_')[0]
-                        if tmp in self.name_to_label:
-                            object_class = self.name_to_label[tmp]
-                        elif tmp in ['stairs']:
-                            object_class = self.name_to_label['clutter']
-                        else:
-                            raise ValueError('Unknown object name: ' + str(tmp))
-
-                        # Correct bug in S3DIS dataset
-                        if object_name == 'ceiling_1.txt':
-                            with open(object_file, 'r') as f:
-                                lines = f.readlines()
-                            for l_i, line in enumerate(lines):
-                                if '103.0\x100000' in line:
-                                    lines[l_i] = line.replace('103.0\x100000', '103.000000')
-                            with open(object_file, 'w') as f:
-                                f.writelines(lines)
-
-                        # Read object points and colors
-                        object_data = np.loadtxt(object_file, dtype=np.float32)
-
-                        # Stack all data
-                        cloud_points = np.vstack((cloud_points, object_data[:, 0:3].astype(np.float32)))
-                        cloud_colors = np.vstack((cloud_colors, object_data[:, 3:6].astype(np.uint8)))
-                        object_classes = np.full((object_data.shape[0], 1), object_class, dtype=np.int32)
-                        cloud_classes = np.vstack((cloud_classes, object_classes))
-
-            # Save as ply
-            write_ply(cloud_file,
-                      (cloud_points, cloud_colors, cloud_classes),
-                      ['x', 'y', 'z', 'red', 'green', 'blue', 'class'])
+                # Save as ply
+                write_ply(cloud_file,
+                        (cloud_points, cloud_classes),
+                        ['x', 'y', 'z', 'class'])
 
         print('Done in {:.1f}s'.format(time.time() - t0))
         return
@@ -754,7 +740,6 @@ class S3DISDataset(PointCloudDataset):
 
                 # read ply with data
                 data = read_ply(sub_ply_file)
-                sub_colors = np.vstack((data['red'], data['green'], data['blue'])).T
                 sub_labels = data['class']
 
                 # Read pkl with search tree
@@ -767,17 +752,14 @@ class S3DISDataset(PointCloudDataset):
                 # Read ply file
                 data = read_ply(file_path)
                 points = np.vstack((data['x'], data['y'], data['z'])).T
-                colors = np.vstack((data['red'], data['green'], data['blue'])).T
                 labels = data['class']
 
                 # Subsample cloud
-                sub_points, sub_colors, sub_labels = grid_subsampling(points,
-                                                                      features=colors,
-                                                                      labels=labels,
-                                                                      sampleDl=dl)
+                sub_points, sub_labels = grid_subsampling(points,
+                                                        labels=labels,
+                                                        sampleDl=dl)
 
-                # Rescale float color and squeeze label
-                sub_colors = sub_colors / 255
+                # Squeeze label
                 sub_labels = np.squeeze(sub_labels)
 
                 # Get chosen neighborhoods
@@ -791,15 +773,14 @@ class S3DISDataset(PointCloudDataset):
 
                 # Save ply
                 write_ply(sub_ply_file,
-                          [sub_points, sub_colors, sub_labels],
-                          ['x', 'y', 'z', 'red', 'green', 'blue', 'class'])
+                          [sub_points, sub_labels],
+                          ['x', 'y', 'z', 'class'])
 
             # Fill data containers
             self.input_trees += [search_tree]
-            self.input_colors += [sub_colors]
             self.input_labels += [sub_labels]
 
-            size = sub_colors.shape[0] * 4 * 7
+            size = sub_labels.shape[0] * 4 * 7
             print('{:.1f} MB loaded in {:.1f}s'.format(size * 1e-6, time.time() - t0))
 
         ############################
@@ -913,10 +894,10 @@ class S3DISDataset(PointCloudDataset):
 #       \********************************/
 
 
-class S3DISSampler(Sampler):
-    """Sampler for S3DIS"""
+class ISPRSSampler(Sampler):
+    """Sampler for ISPRS"""
 
-    def __init__(self, dataset: S3DISDataset):
+    def __init__(self, dataset: ISPRSDataset):
         Sampler.__init__(self, dataset)
 
         # Dataset used by the sampler (no copy is made in memory)
@@ -1393,8 +1374,8 @@ class S3DISSampler(Sampler):
         return
 
 
-class S3DISCustomBatch:
-    """Custom batch definition with memory pinning for S3DIS"""
+class ISPRSCustomBatch:
+    """Custom batch definition with memory pinning for ISPRS"""
 
     def __init__(self, input_list):
 
@@ -1532,8 +1513,8 @@ class S3DISCustomBatch:
         return all_p_list
 
 
-def S3DISCollate(batch_data):
-    return S3DISCustomBatch(batch_data)
+def ISPRSCollate(batch_data):
+    return ISPRSCustomBatch(batch_data)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

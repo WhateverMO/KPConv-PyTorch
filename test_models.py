@@ -32,7 +32,7 @@ import torch
 from datasets.ModelNet40 import *
 from datasets.S3DIS import *
 from datasets.SemanticKitti import *
-from datasets.toronto3d import *
+from datasets.Toronto3D import *
 from torch.utils.data import DataLoader
 
 from utils.config import Config
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     #       > 'last_XXX': Automatically retrieve the last trained model on dataset XXX
     #       > '(old_)results/Log_YYYY-MM-DD_HH-MM-SS': Directly provide the path of a trained model
 
-    chosen_log = 'results/Light_KPFCNN'
+    chosen_log = 'results/Log_2024-03-17_11-13-25'
 
     # Choose the index of the checkpoint to load OR None if you want to load the current checkpoint
     chkp_idx = -1
@@ -221,3 +221,4 @@ if __name__ == '__main__':
         tester.slam_segmentation_test(net, test_loader, config)
     else:
         raise ValueError('Unsupported dataset_task for testing: ' + config.dataset_task)
+ 

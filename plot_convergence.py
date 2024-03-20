@@ -743,8 +743,9 @@ def experiment_name_2():
     """
 
     # Using the dates of the logs, you can easily gather consecutive ones. All logs should be of the same dataset.
-    start = 'Log_2020-04-22_11-52-58'
-    end = 'Log_2020-05-22_11-52-58'
+    start = 'Log_2024-03-17_10-33-32'
+    start = 'Log_2024-03-17_11-13-25'
+    end = 'Log_2024-03-17_11-13-25'
 
     # Name of the result path
     res_path = 'results'
@@ -753,17 +754,23 @@ def experiment_name_2():
     logs = np.sort([join(res_path, l) for l in listdir_str(res_path) if start <= l <= end])
 
     # Optionally add a specific log at a specific place in the log list
-    logs = logs.astype('<U50')
-    logs = np.insert(logs, 0, 'results/Log_2020-04-04_10-04-42')
+    # logs = logs.astype('<U50')
+    # logs = np.insert(logs, 0, 'results/Log_2020-04-04_10-04-42')
 
     # Give names to the logs (for plot legends)
-    logs_names = ['name_log_inserted',
-                  'name_log_1',
-                  'name_log_2',
-                  'name_log_3']
+    logs_names = [
+                    'name_log_inserted',
+                    'name_log_1',
+                    'name_log_2',
+                    'name_log_3',
+                    'name_log_4',
+                ]
 
     # safe check log names
     logs_names = np.array(logs_names[:len(logs)])
+
+    print(logs)
+    print(logs_names)
 
     return logs, logs_names
 
@@ -781,7 +788,7 @@ if __name__ == '__main__':
     ######################################################
 
     # My logs: choose the logs to show
-    logs, logs_names = experiment_name_1()
+    logs, logs_names = experiment_name_2()
 
     ################
     # Plot functions
