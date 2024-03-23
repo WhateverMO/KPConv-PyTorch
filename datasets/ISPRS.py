@@ -51,18 +51,14 @@ from utils.config import bcolors
 #       \******************************/
 
 def read_pts_file(file_path,lable = True):
-    with open(file_path, 'r') as f:
-        lines = f.readlines()
-
-    points = []
-    lables = []
-    for line in lines:
-        parts = line.split()
-        point = [float(it) for it in parts[:3]]
-        points.append(point)
-        if lable:
-            lables.append(int(parts[-1]))
-    return points,lables
+    data = npj.loadtxt(file_path)
+    
+    points = data[:,0:3]
+    features = data[:,3:6]
+    lables = np.ones_like(data[:,0])
+    if lable:
+        lables = data[:,-1]
+    return points,features,lables
 
 class ISPRSDataset(PointCloudDataset):
     """Class to handle ISPRS dataset."""
@@ -123,7 +119,7 @@ class ISPRSDataset(PointCloudDataset):
         ply_path = join(self.path, self.train_path)
 
         # Proportion of validation scenes
-        self.cloud_names = ['Vaihingen3D_Traininig','Vaihingen3D_EVAL_WITHOUT_REF']
+        self.cloud_names = ['Vaihingen3D_Traininig','Vaihingen3D_EVAL_WITH_REF']
         self.all_splits = [0, 1]
         self.validation_split = 1
 
@@ -679,6 +675,7 @@ class ISPRSDataset(PointCloudDataset):
             else:
                 # Initiate containers
                 cloud_points = np.empty((0, 3), dtype=np.float32)
+                cloud_features = np.empty((0, 3), dtype=np.uint8)
                 cloud_classes = np.empty((0, 1), dtype=np.int32)
 
                 pts_file = join(self.path, cloud_name + '.pts')
@@ -686,24 +683,22 @@ class ISPRSDataset(PointCloudDataset):
                 if not exists(pts_file):
                     raise ValueError('File not found: ' + pts_file)
                 # Read pts file
-                if 'Training' in cloud_name:
-                    points, labels = read_pts_file(pts_file)
-                else:
-                    points, labels = read_pts_file(pts_file,False)
-                    labels = [self.max_label for _ in range(len(points))]
+                points, features, labels = read_pts_file(pts_file)
                 
                 # Convert to numpy
                 points = np.array(points, dtype=np.float32)
+                features = np.array(features,dtype=np.uint8)
                 labels = np.array(labels, dtype=np.int32)
                 
                 # Stack all data
                 cloud_points = np.vstack((cloud_points, points.astype(np.float32)))
+                cloud_features = np.vstack((cloud_features, features.astype(np.uint8)))
                 cloud_classes = np.vstack((cloud_classes, labels.reshape(-1, 1).astype(np.int32)))
 
                 # Save as ply
                 write_ply(cloud_file,
-                        (cloud_points, cloud_classes),
-                        ['x', 'y', 'z', 'class'])
+                        (cloud_points, cloud_features, cloud_classes),
+                        ['x', 'y', 'z', 'f1', 'f2', 'f3', 'class'])
 
         print('Done in {:.1f}s'.format(time.time() - t0))
         return
@@ -740,6 +735,7 @@ class ISPRSDataset(PointCloudDataset):
 
                 # read ply with data
                 data = read_ply(sub_ply_file)
+                sub_features = np.vstack((data['f1'], data['f2'], data['f3'])).T
                 sub_labels = data['class']
 
                 # Read pkl with search tree
@@ -752,10 +748,12 @@ class ISPRSDataset(PointCloudDataset):
                 # Read ply file
                 data = read_ply(file_path)
                 points = np.vstack((data['x'], data['y'], data['z'])).T
+                features = np.vstack((data['f1'], data['f2'], data['f3'])).T
                 labels = data['class']
 
                 # Subsample cloud
-                sub_points, sub_labels = grid_subsampling(points,
+                sub_points, sub_features, sub_labels = grid_subsampling(points,
+                                                        features= features,
                                                         labels=labels,
                                                         sampleDl=dl)
 
@@ -773,11 +771,12 @@ class ISPRSDataset(PointCloudDataset):
 
                 # Save ply
                 write_ply(sub_ply_file,
-                          [sub_points, sub_labels],
-                          ['x', 'y', 'z', 'class'])
+                          [sub_points, sub_features, sub_labels],
+                          ['x', 'y', 'z', 'f1', 'f2', 'f3', 'class'])
 
             # Fill data containers
             self.input_trees += [search_tree]
+            self.input_colors += [sub_features]
             self.input_labels += [sub_labels]
 
             size = sub_labels.shape[0] * 4 * 7
