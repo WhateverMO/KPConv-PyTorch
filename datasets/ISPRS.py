@@ -51,7 +51,7 @@ from utils.config import bcolors
 #       \******************************/
 
 def read_pts_file(file_path,lable = True):
-    data = npj.loadtxt(file_path)
+    data = np.loadtxt(file_path)
     
     points = data[:,0:3]
     features = data[:,3:6]
