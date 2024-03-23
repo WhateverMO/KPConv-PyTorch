@@ -686,9 +686,9 @@ class ISPRSDataset(PointCloudDataset):
                 points, features, labels = read_pts_file(pts_file)
                 
                 # Separate the x, y, z coordinates
-                cloud_x = cloud_points[:, 0]
-                cloud_y = cloud_points[:, 1]
-                cloud_z = cloud_points[:, 2]
+                cloud_x = points[:, 0]
+                cloud_y = points[:, 1]
+                cloud_z = points[:, 2]
 
                 # Shift the coordinates to make the minimum 0
                 cloud_x = cloud_x - cloud_x.min()
