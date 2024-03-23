@@ -685,6 +685,19 @@ class ISPRSDataset(PointCloudDataset):
                 # Read pts file
                 points, features, labels = read_pts_file(pts_file)
                 
+                # Separate the x, y, z coordinates
+                cloud_x = cloud_points[:, 0]
+                cloud_y = cloud_points[:, 1]
+                cloud_z = cloud_points[:, 2]
+
+                # Shift the coordinates to make the minimum 0
+                cloud_x = cloud_x - cloud_x.min()
+                cloud_y = cloud_y - cloud_y.min()
+                cloud_z = cloud_z - cloud_z.min()
+
+                # Combine the shifted coordinates back into cloud_points
+                cloud_points = np.stack((cloud_x, cloud_y, cloud_z), axis=-1)
+                
                 # Convert to numpy
                 points = np.array(points, dtype=np.float32)
                 features = np.array(features,dtype=np.uint8)
