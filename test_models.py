@@ -33,6 +33,7 @@ from datasets.ModelNet40 import *
 from datasets.S3DIS import *
 from datasets.SemanticKitti import *
 from datasets.Toronto3D import *
+from datasets.ISPRS import *
 from torch.utils.data import DataLoader
 
 from utils.config import Config
@@ -171,6 +172,10 @@ if __name__ == '__main__':
         test_dataset = S3DISDataset(config, set='validation', use_potentials=True)
         test_sampler = S3DISSampler(test_dataset)
         collate_fn = S3DISCollate
+    elif config.dataset == 'ISPRS':
+        test_dataset = ISPRSDataset(config, set='validation', use_potentials=True)
+        test_sampler = ISPRSSampler(test_dataset)
+        collate_fn = ISPRSCollate
     elif config.dataset == 'Toronto3D':
         test_dataset = Toronto3DDataset(config, set='test', use_potentials=True)
         test_sampler = Toronto3DSampler(test_dataset)
