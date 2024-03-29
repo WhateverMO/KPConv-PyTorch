@@ -245,7 +245,7 @@ class PointCloudDataset(Dataset):
         self.label_to_idx = {l: i for i, l in enumerate(self.label_values)}
         self.name_to_label = {v: k for k, v in self.label_to_names.items()}
 
-    def augmentation_transform(self, points, normals=None, verbose=False):
+    def augmentation_transform(self, points, normals=None, verbose=False, scale=None, R=None):
         """Implementation of an augmentation transform for point clouds."""
 
         ##########
@@ -253,30 +253,30 @@ class PointCloudDataset(Dataset):
         ##########
 
         # Initialize rotation matrix
-        R = np.eye(points.shape[1])
+        if R == None:
+            R = np.eye(points.shape[1])
+            if points.shape[1] == 3:
+                if self.config.augment_rotation == 'vertical':
 
-        if points.shape[1] == 3:
-            if self.config.augment_rotation == 'vertical':
+                    # Create random rotations
+                    theta = np.random.rand() * 2 * np.pi
+                    c, s = np.cos(theta), np.sin(theta)
+                    R = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]], dtype=np.float32)
 
-                # Create random rotations
-                theta = np.random.rand() * 2 * np.pi
-                c, s = np.cos(theta), np.sin(theta)
-                R = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]], dtype=np.float32)
+                elif self.config.augment_rotation == 'all':
 
-            elif self.config.augment_rotation == 'all':
+                    # Choose two random angles for the first vector in polar coordinates
+                    theta = np.random.rand() * 2 * np.pi
+                    phi = (np.random.rand() - 0.5) * np.pi
 
-                # Choose two random angles for the first vector in polar coordinates
-                theta = np.random.rand() * 2 * np.pi
-                phi = (np.random.rand() - 0.5) * np.pi
+                    # Create the first vector in carthesian coordinates
+                    u = np.array([np.cos(theta) * np.cos(phi), np.sin(theta) * np.cos(phi), np.sin(phi)])
 
-                # Create the first vector in carthesian coordinates
-                u = np.array([np.cos(theta) * np.cos(phi), np.sin(theta) * np.cos(phi), np.sin(phi)])
+                    # Choose a random rotation angle
+                    alpha = np.random.rand() * 2 * np.pi
 
-                # Choose a random rotation angle
-                alpha = np.random.rand() * 2 * np.pi
-
-                # Create the rotation matrix with this vector and angle
-                R = create_3D_rotations(np.reshape(u, (1, -1)), np.reshape(alpha, (1, -1)))[0]
+                    # Create the rotation matrix with this vector and angle
+                    R = create_3D_rotations(np.reshape(u, (1, -1)), np.reshape(alpha, (1, -1)))[0]
 
         R = R.astype(np.float32)
 
@@ -287,15 +287,16 @@ class PointCloudDataset(Dataset):
         # Choose random scales for each example
         min_s = self.config.augment_scale_min
         max_s = self.config.augment_scale_max
-        if self.config.augment_scale_anisotropic:
-            scale = np.random.rand(points.shape[1]) * (max_s - min_s) + min_s
-        else:
-            scale = np.random.rand() * (max_s - min_s) + min_s
+        if scale == None:
+            if self.config.augment_scale_anisotropic:
+                scale = np.random.rand(points.shape[1]) * (max_s - min_s) + min_s
+            else:
+                scale = np.random.rand() * (max_s - min_s) + min_s
 
-        # Add random symmetries to the scale factor
-        symmetries = np.array(self.config.augment_symmetries).astype(np.int32)
-        symmetries *= np.random.randint(2, size=points.shape[1])
-        scale = (scale * (1 - symmetries * 2)).astype(np.float32)
+            # Add random symmetries to the scale factor
+            symmetries = np.array(self.config.augment_symmetries).astype(np.int32)
+            symmetries *= np.random.randint(2, size=points.shape[1])
+            scale = (scale * (1 - symmetries * 2)).astype(np.float32)
 
         #######
         # Noise

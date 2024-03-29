@@ -175,6 +175,8 @@ class ISPRSDataset(PointCloudDataset):
         self.num_clouds = 0
         self.test_proj = []
         self.validation_labels = []
+        if self.config.weak_supervision:
+            self.weak_inds = []
 
         # Start loading
         self.load_subsampled_clouds()
@@ -263,6 +265,14 @@ class ISPRSDataset(PointCloudDataset):
         R_list = []
         batch_n = 0
         failed_attempts = 0
+        if self.config.weak_supervision:
+            p_list_weak = []
+            f_list_weak = []
+            fxyz_list_weak = []
+            l_list_weak = []
+            i_list_weak = []
+            pi_list_weak = []
+            ci_list_weak = []
 
         info = get_worker_info()
         if info is not None:
@@ -395,6 +405,59 @@ class ISPRSDataset(PointCloudDataset):
             ci_list += [cloud_ind]
             s_list += [scale]
             R_list += [R]
+            
+            if self.config.weak_supervision:
+                all_weak_inds = self.weak_inds[cloud_ind]
+                # calculate the intersection of the input_inds and all_weak_inds
+                weak_inds = np.intersect1d(input_inds, all_weak_inds)
+                if len(weak_inds) > 0:
+                    # Collect weak labels and colors
+                    weak_points = (points[weak_inds] - center_point).astype(np.float32)
+                    weak_colors = self.input_colors[cloud_ind][weak_inds]
+                    if self.set in ['test', 'ERF']:
+                        weak_labels = np.zeros(weak_points.shape[0])
+                    else:
+                        weak_labels = self.input_labels[cloud_ind][weak_inds]
+                        weak_labels = np.array([self.label_to_idx[l] for l in weak_labels])
+
+                    # Data augmentation
+                    weak_points, _, _ = self.augmentation_transform(weak_points,scale,R)
+                    
+                    # Color augmentation
+                    if np.random.rand() > self.config.augment_color:
+                        weak_colors *= 0
+                    
+                    # Get original height as additional feature
+                    weak_features = np.hstack((weak_colors, weak_points[:, 2:] + center_point[:, 2:])).astype(np.float32)
+                    weak_features_xyz = np.hstack((weak_points, weak_points[:, 2:] + center_point[:, 2:], weak_colors)).astype(np.float32)
+
+                    # Stack weak batch
+                    p_list_weak += [weak_points]
+                    f_list_weak += [weak_features]
+                    fxyz_list_weak += [weak_features_xyz]
+                    l_list_weak += [weak_labels]
+                    pi_list_weak += [weak_inds]
+                    i_list_weak += [point_ind]
+                    ci_list_weak += [cloud_ind]
+                else:
+                    print('No weak supervision for this cloud')
+                    print('Cloud name: ', self.cloud_names[cloud_ind])
+                    print('Point index: ', point_ind)
+                    print('Center point: ', center_point)
+                    print('Pot points: ', pot_points)
+                    print('Pot inds: ', pot_inds)
+                    print('Distances: ', dists)
+                    print('Min potential: ', self.min_potentials[cloud_ind])
+                    print('Argmin potential: ', self.argmin_potentials[cloud_ind])
+                    print('Input inds: ', input_inds)
+                    print('Input points: ', input_points)
+                    print('Input labels: ', input_labels)
+                    if self.config.weak_supervision:
+                        print('Weak inds: ', weak_inds)
+                        print('Weak points: ', weak_points)
+                        print('Weak labels: ', weak_labels)
+                    raise ValueError('No weak supervision for this cloud')
+                
 
             # Update batch size
             batch_n += n
@@ -434,7 +497,29 @@ class ISPRSDataset(PointCloudDataset):
         elif self.config.in_features_dim == 8:
             stacked_features = np.hstack((stacked_features, features_xyz))
         else:
-            raise ValueError('Only accepted input dimensions are 1, 4 and 7 (without and with XYZ)')
+            raise ValueError('Only accepted input dimensions are 1, 4 and 8 (without and with XYZ)')
+
+        if self.config.weak_supervision:
+            stacked_weak_points = np.concatenate(p_list_weak, axis=0)
+            weak_features = np.concatenate(f_list_weak, axis=0)
+            weak_features_xyz = np.concatenate(fxyz_list_weak, axis=0)
+            weak_labels = np.concatenate(l_list_weak, axis=0)
+            weak_point_inds = np.array(i_list_weak, dtype=np.int32)
+            weak_cloud_inds = np.array(ci_list_weak, dtype=np.int32)
+            weak_input_inds = np.concatenate(pi_list_weak, axis=0)
+            stacked_weak_lengths = np.array([pp.shape[0] for pp in p_list_weak], dtype=np.int32)
+            
+            stacked_weak_features = np.ones_like(stacked_weak_points[:, :1], dtype=np.float32)
+            if self.config.in_features_dim == 1:
+                pass
+            elif self.config.in_features_dim == 4:
+                stacked_weak_features = np.hstack((stacked_weak_features, weak_features[:, :3]))
+            elif self.config.in_features_dim == 5:
+                stacked_weak_features = np.hstack((stacked_weak_features, weak_features))
+            elif self.config.in_features_dim == 8:
+                stacked_weak_features = np.hstack((stacked_weak_features, weak_features_xyz))
+            else:
+                raise ValueError('Only accepted input dimensions are 1, 4 and 8 (without and with XYZ)')
 
         #######################
         # Create network inputs
@@ -456,6 +541,13 @@ class ISPRSDataset(PointCloudDataset):
         # Add scale and rotation for testing
         input_list += [scales, rots, cloud_inds, point_inds, input_inds]
 
+        if self.config.weak_supervision:
+            input_weak_list = self.segmentation_inputs(stacked_weak_points,
+                                                       stacked_weak_features,
+                                                       weak_labels,
+                                                       stacked_weak_lengths)
+            input_weak_list += [scales, rots, weak_cloud_inds, weak_point_inds, weak_input_inds]
+        
         if debug_workers:
             message = ''
             for wi in range(info.num_workers):
@@ -516,6 +608,9 @@ class ISPRSDataset(PointCloudDataset):
             print('stack ..... {:5.1f}ms'.format(1000 * (t[ti+1] - t[ti])))
             ti += 1
             print('\n************************\n')
+        if self.config.weak_supervision:
+            ret = (input_list, input_weak_list)
+            return ret
         return input_list
 
     def random_item(self, batch_i):
@@ -786,7 +881,32 @@ class ISPRSDataset(PointCloudDataset):
                 write_ply(sub_ply_file,
                           [sub_points, sub_features, sub_labels],
                           ['x', 'y', 'z', 'f1', 'f2', 'f3', 'class'])
-
+           
+            if self.config.weak_supervision:
+                percentage = self.config.weak_supervision_percentage
+                ws_in_radius = self.config.weak_supervision_in_radius
+                weak_supervision_inds_file = join(tree_path, '{:s}_ws_inds{:.1f}_radius{:.1f}.npy'.format(cloud_name, percentage, ws_in_radius))
+                # Create weak supervision labels index
+                # Uniform distribution of labels
+                if exists(weak_supervision_inds_file):
+                    with open(weak_supervision_inds_file, 'rb') as f:
+                        selected_inds = np.load(f)
+                else:
+                    points_sum = search_tree.data.shape[0]
+                    selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
+                    while selected_inds.shape[0] < int(points_sum * percentage):
+                        # Get points in the ball
+                        center_point_ind = np.random.randint(points_sum)
+                        inds = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1),
+                                                        r=ws_in_radius)[0]
+                        selected_inds = np.concatenate((selected_inds, inds))
+                        selected_inds = np.unique(selected_inds)
+                    # Save weak supervision indices
+                    with open(weak_supervision_inds_file, 'wb') as f:
+                        np.save(f, selected_inds)
+                self.weak_inds += [selected_inds]
+                
+            
             # Fill data containers
             self.input_trees += [search_tree]
             self.input_colors += [sub_features]
@@ -1527,6 +1647,25 @@ class ISPRSCustomBatch:
 
 def ISPRSCollate(batch_data):
     return ISPRSCustomBatch(batch_data)
+
+class ISPRSCustomBatchWeak:
+    """Custom batch definition with memory pinning for ISPRS"""
+
+    def __init__(self, ret):
+        input_list = ret[0]
+        input_weak = ret[1]
+        
+        self.origin_batch = ISPRSCustomBatch(input_list)
+        self.weak_batch = ISPRSCustomBatch(input_weak)
+
+        return
+    
+    def values(self):
+        return self.origin_batch, self.weak_batch
+
+
+def ISPRSCollateWeak(batch_data):
+    return ISPRSCustomBatchWeak(batch_data)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

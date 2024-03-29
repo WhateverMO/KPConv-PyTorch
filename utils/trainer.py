@@ -291,6 +291,178 @@ class ModelTrainer:
 
         print('Finished Training')
         return
+    
+    def train_weakly(self, student_net, teacher_net, training_loader, val_loader, config):
+        """
+        Train weakly the model on a particular dataset.
+        """
+
+        ################
+        # Initialization
+        ################
+        
+        timeFormat = "%m-%d %H:%M"
+        now = time.localtime()
+
+        print('Start! time:'+ time.strftime(timeFormat,now))
+
+        if config.saving:
+            # Training log file
+            with open(join(config.saving_path, 'training.txt'), "w") as file:
+                file.write('epochs steps out_loss offset_loss train_accuracy time\n')
+
+            # Killing file (simply delete this file when you want to stop the training)
+            PID_file = join(config.saving_path, 'running_PID.txt')
+            if not exists(PID_file):
+                with open(PID_file, "w") as file:
+                    file.write('Launched with PyCharm')
+
+            # Checkpoints directory
+            checkpoint_directory = join(config.saving_path, 'checkpoints')
+            if not exists(checkpoint_directory):
+                makedirs(checkpoint_directory)
+        else:
+            checkpoint_directory = None
+            PID_file = None
+
+        # Loop variables
+        t0 = time.time()
+        t = [time.time()]
+        last_display = time.time()
+        mean_dt = np.zeros(1)
+
+        # Start training loop
+        for epoch in range(config.max_epoch):
+
+            # Remove File for kill signal
+            if epoch == config.max_epoch - 1 and exists(PID_file):
+                remove(PID_file)
+
+            self.step = 0
+            for two_batches in training_loader:
+                
+                batch, teacher_batch = two_batches
+
+                # Check kill signal (running_PID.txt deleted)
+                if config.saving and not exists(PID_file):
+                    continue
+
+                ##################
+                # Processing batch
+                ##################
+
+                # New time
+                t = t[-1:]
+                t += [time.time()]
+
+                if 'cuda' in self.device.type:
+                    batch.to(self.device)
+
+                # zero the parameter gradients
+                self.optimizer.zero_grad()
+
+                # Forward pass
+                outputs = student_net(batch, config)
+                loss = student_net.loss(outputs, batch.labels)
+                acc = student_net.accuracy(outputs, batch.labels)
+
+                t += [time.time()]
+
+                # Backward + optimize
+                loss.backward()
+
+                if config.grad_clip_norm > 0:
+                    #torch.nn.utils.clip_grad_norm_(net.parameters(), config.grad_clip_norm)
+                    torch.nn.utils.clip_grad_value_(student_net.parameters(), config.grad_clip_norm)
+                self.optimizer.step()
+
+                
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize(self.device)
+
+                t += [time.time()]
+
+                # Average timing
+                if self.step < 2:
+                    mean_dt = np.array(t[1:]) - np.array(t[:-1])
+                else:
+                    mean_dt = 0.9 * mean_dt + 0.1 * (np.array(t[1:]) - np.array(t[:-1]))
+
+                # Console display (only one per second)
+                if (t[-1] - last_display) > 1.0:
+                    last_display = t[-1]
+                    message = 'e{:03d}-i{:04d} => L={:.3f} acc={:3.0f}% / t(ms): {:5.1f} {:5.1f} {:5.1f})'
+                    print(message.format(self.epoch, self.step,
+                                         loss.item(),
+                                         100*acc,
+                                         1000 * mean_dt[0],
+                                         1000 * mean_dt[1],
+                                         1000 * mean_dt[2]))
+
+                # Log file
+                if config.saving:
+                    with open(join(config.saving_path, 'training.txt'), "a") as file:
+                        message = '{:d} {:d} {:.3f} {:.3f} {:.3f} {:.3f}\n'
+                        file.write(message.format(self.epoch,
+                                                  self.step,
+                                                  student_net.output_loss,
+                                                  student_net.reg_loss,
+                                                  acc,
+                                                  t[-1] - t0))
+
+
+                self.step += 1
+
+            ##############
+            # End of epoch
+            ##############
+
+            # Check kill signal (running_PID.txt deleted)
+            if config.saving and not exists(PID_file):
+                break
+
+            # Update learning rate
+            if self.epoch in config.lr_decays:
+                for param_group in self.optimizer.param_groups:
+                    param_group['lr'] *= config.lr_decays[self.epoch]
+
+            # Update epoch
+            self.epoch += 1
+
+            # Saving
+            if config.saving:
+                # Get current state dict
+                save_dict = {'epoch': self.epoch,
+                             'model_state_dict': student_net.state_dict(),
+                             'optimizer_state_dict': self.optimizer.state_dict(),
+                             'saving_path': config.saving_path}
+
+                # Save current state of the network (for restoring purposes)
+                checkpoint_path = join(checkpoint_directory, 'current_chkp.tar')
+                torch.save(save_dict, checkpoint_path)
+
+                # Save checkpoints occasionally
+                if (self.epoch + 1) % config.checkpoint_gap == 0:
+                    checkpoint_path = join(checkpoint_directory, 'chkp_{:04d}.tar'.format(self.epoch + 1))
+                    torch.save(save_dict, checkpoint_path)
+
+            # Validation
+            student_net.eval()
+            self.validation(student_net, val_loader, config)
+            student_net.train()
+            
+            finish = time.localtime()
+
+            print('time:'+ time.strftime(timeFormat,finish))
+            used_time = (time.mktime(finish) - time.mktime(now))
+            used_time = time.gmtime(used_time)
+        
+            print('Used time: '+time.strftime("%dd:%H:%M:%S",used_time))
+        
+        print('Used time: '+time.strftime("%dd:%H:%M:%S",used_time))
+
+        print('Finished Training')
+        return
 
     # Validation methods
     # ------------------------------------------------------------------------------------------------------------------

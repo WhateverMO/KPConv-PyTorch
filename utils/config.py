@@ -42,6 +42,8 @@ class Config:
 
     # Dataset name
     dataset = ''
+    
+    weak_supervision = False
 
     # Type of network model
     dataset_task = ''
