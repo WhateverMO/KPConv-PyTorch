@@ -33,6 +33,7 @@ from os.path import exists, join
 import time
 import sys
 
+
 # PLY reader
 from utils.ply import read_ply, write_ply
 
@@ -363,12 +364,18 @@ class ModelTrainer:
 
                 # Forward pass
                 outputs = student_net(batch, config)
-                loss = student_net.loss(outputs, batch.labels)
+                loss_student = student_net.loss(outputs, batch.labels)
                 acc = student_net.accuracy(outputs, batch.labels)
-
+                
+                outputs_teacher = teacher_net(teacher_batch, config)
+                
+                # kl_loss for output and output_teacher
+                consistency_loss = nn.KLDivLoss(reduction='batchmean')(nn.functional.log_softmax(outputs, dim=1), nn.functional.softmax(outputs_teacher, dim=1))
+                
                 t += [time.time()]
 
                 # Backward + optimize
+                loss = loss_student + consistency_loss
                 loss.backward()
 
                 if config.grad_clip_norm > 0:
@@ -376,6 +383,19 @@ class ModelTrainer:
                     torch.nn.utils.clip_grad_value_(student_net.parameters(), config.grad_clip_norm)
                 self.optimizer.step()
 
+                t += [time.time()]
+
+                # ema update
+                student_model_dict = student_net.state_dict()
+                new_teacher_model_dict = {}
+                ema_keep_rate = config.ema_keep_rate
+                for key, value in teacher_net.state_dict().items():
+                    if key in student_model_dict.keys():
+                        new_teacher_model_dict[key] = ema_keep_rate * value + (1 - ema_keep_rate) * student_model_dict[key]
+                    else:
+                        raise ValueError('key not in student_model_dict')
+                teacher_net.load_state_dict(new_teacher_model_dict)
+                        
                 
                 torch.cuda.empty_cache()
                 torch.cuda.synchronize(self.device)
@@ -391,22 +411,24 @@ class ModelTrainer:
                 # Console display (only one per second)
                 if (t[-1] - last_display) > 1.0:
                     last_display = t[-1]
-                    message = 'e{:03d}-i{:04d} => L={:.3f} acc={:3.0f}% / t(ms): {:5.1f} {:5.1f} {:5.1f})'
+                    message = 'e{:03d}-i{:04d} => L={:.3f} acc={:3.0f}% / t(ms): {:5.1f} {:5.1f} {:5.1f} {:5.1f})'
                     print(message.format(self.epoch, self.step,
                                          loss.item(),
                                          100*acc,
                                          1000 * mean_dt[0],
                                          1000 * mean_dt[1],
-                                         1000 * mean_dt[2]))
+                                         1000 * mean_dt[2],
+                                         1000 * mean_dt[3]))
 
                 # Log file
                 if config.saving:
                     with open(join(config.saving_path, 'training.txt'), "a") as file:
-                        message = '{:d} {:d} {:.3f} {:.3f} {:.3f} {:.3f}\n'
+                        message = '{:d} {:d} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}\n'
                         file.write(message.format(self.epoch,
                                                   self.step,
                                                   student_net.output_loss,
                                                   student_net.reg_loss,
+                                                  consistency_loss,
                                                   acc,
                                                   t[-1] - t0))
 
@@ -445,11 +467,25 @@ class ModelTrainer:
                 if (self.epoch + 1) % config.checkpoint_gap == 0:
                     checkpoint_path = join(checkpoint_directory, 'chkp_{:04d}.tar'.format(self.epoch + 1))
                     torch.save(save_dict, checkpoint_path)
+                    
+                save_teacher_dict = {'epoch': self.epoch,
+                             'model_state_dict': teacher_net.state_dict(),
+                             'saving_path': config.saving_path}
+                checkpoint_path = join(checkpoint_directory, 'teacher_current_chkp.tar')
+                torch.save(save_teacher_dict, checkpoint_path)
+                
+                if (self.epoch + 1) % config.checkpoint_gap == 0:
+                    checkpoint_path = join(checkpoint_directory, 'teacher_chkp_{:04d}.tar'.format(self.epoch + 1))
+                    torch.save(save_teacher_dict, checkpoint_path)
 
             # Validation
             student_net.eval()
             self.validation(student_net, val_loader, config)
             student_net.train()
+            
+            teacher_net.eval()
+            self.validation(teacher_net, val_loader, config, is_teacher=True)
+            teacher_net.train()
             
             finish = time.localtime()
 
@@ -600,7 +636,7 @@ class ModelTrainer:
 
         return C1
 
-    def cloud_segmentation_validation(self, net, val_loader, config, debug=False):
+    def cloud_segmentation_validation(self, net, val_loader, config, debug=False,is_teacher=False):
         """
         Validation method for cloud segmentation models
         """
@@ -655,8 +691,15 @@ class ModelTrainer:
         t1 = time.time()
 
         # Start validation loop
-        for i, batch in enumerate(val_loader):
-
+        for i, two_batch in enumerate(val_loader):
+            
+            if is_teacher:
+                _ , batch = two_batch
+                teacher_name = 'teacher_'
+            else:
+                batch, _ = two_batch
+                teacher_name = ''
+            
             # New time
             t = t[-1:]
             t += [time.time()]
@@ -703,7 +746,7 @@ class ModelTrainer:
             # Display
             if (t[-1] - last_display) > 1.0:
                 last_display = t[-1]
-                message = 'Validation : {:.1f}% (timings : {:4.2f} {:4.2f})'
+                message = teacher_name + 'Validation : {:.1f}% (timings : {:4.2f} {:4.2f})'
                 print(message.format(100 * i / config.validation_size,
                                      1000 * (mean_dt[0]),
                                      1000 * (mean_dt[1])))
@@ -752,7 +795,7 @@ class ModelTrainer:
         if config.saving:
 
             # Name of saving file
-            test_file = join(config.saving_path, 'val_IoUs.txt')
+            test_file = join(config.saving_path, teacher_name + 'val_IoUs.txt')
 
             # Line to write:
             line = ''
@@ -770,7 +813,7 @@ class ModelTrainer:
 
             # Save potentials
             if val_loader.dataset.use_potentials:
-                pot_path = join(config.saving_path, 'potentials')
+                pot_path = join(config.saving_path,teacher_name + 'potentials')
                 if not exists(pot_path):
                     makedirs(pot_path)
                 files = val_loader.dataset.files
@@ -787,11 +830,11 @@ class ModelTrainer:
 
         # Print instance mean
         mIoU = 100 * np.mean(IoUs)
-        print('{:s} mean IoU = {:.1f}%'.format(config.dataset, mIoU))
+        print(teacher_name + '{:s} mean IoU = {:.1f}%'.format(config.dataset, mIoU))
 
         # Save predicted cloud occasionally
         if config.saving and (self.epoch + 1) % config.checkpoint_gap == 0:
-            val_path = join(config.saving_path, 'val_preds_{:d}'.format(self.epoch + 1))
+            val_path = join(config.saving_path, teacher_name + 'val_preds_{:d}'.format(self.epoch + 1))
             if not exists(val_path):
                 makedirs(val_path)
             files = val_loader.dataset.files
@@ -828,7 +871,7 @@ class ModelTrainer:
         t7 = time.time()
         if debug:
             print('\n************************\n')
-            print('Validation timings:')
+            print(teacher_name + 'Validation timings:')
             print('Init ...... {:.1f}s'.format(t1 - t0))
             print('Loop ...... {:.1f}s'.format(t2 - t1))
             print('Confs ..... {:.1f}s'.format(t3 - t2))
