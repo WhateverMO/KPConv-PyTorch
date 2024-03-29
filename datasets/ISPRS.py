@@ -454,6 +454,7 @@ class ISPRSDataset(PointCloudDataset):
                     print('Input points: ', input_points)
                     print('Input labels: ', input_labels)
                     if self.config.weak_supervision:
+                        print('all Weak inds: ', all_weak_inds)
                         print('Weak inds: ', weak_inds)
                     raise ValueError('No weak supervision for this cloud')
                 
@@ -608,7 +609,10 @@ class ISPRSDataset(PointCloudDataset):
             ti += 1
             print('\n************************\n')
         if self.config.weak_supervision:
-            ret = (input_list, input_weak_list)
+            ret = {
+                0: input_list,
+                1: input_weak_list
+            }
             return ret
         return input_list
 
@@ -1653,6 +1657,9 @@ class ISPRSCustomBatchWeak:
     """Custom batch definition with memory pinning for ISPRS"""
 
     def __init__(self, ret):
+        
+        ret = ret[0]
+        
         input_list = ret[0]
         input_weak = ret[1]
         

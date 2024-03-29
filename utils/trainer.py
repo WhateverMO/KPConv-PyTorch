@@ -342,7 +342,7 @@ class ModelTrainer:
             self.step = 0
             for two_batches in training_loader:
                 
-                batch, teacher_batch = two_batches
+                batch, teacher_batch = two_batches.values()
 
                 # Check kill signal (running_PID.txt deleted)
                 if config.saving and not exists(PID_file):

@@ -55,7 +55,7 @@ class ISPRSConfig(Config):
     # weak supervision
     weak_supervision = True
     weak_supervision_perc = 0.01
-    weak_supervision_in_radius = 2
+    weak_supervision_in_radius = 1
     ema_keep_rate = 0.955
 
     # Number of classes in the dataset (This value is overwritten by dataset class when Initializating dataset).
