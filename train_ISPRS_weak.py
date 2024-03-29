@@ -342,9 +342,9 @@ if __name__ == '__main__':
 
     # Training
     if config.weak_supervision:
-        trainer.train(net, training_loader, test_loader, config)
-    else:
         trainer.train_weakly(net, net_teacker, training_loader, test_loader, config)
+    else:
+        trainer.train(net, training_loader, test_loader, config)
         
     print('Forcing exit now')
     os.kill(os.getpid(), signal.SIGINT)

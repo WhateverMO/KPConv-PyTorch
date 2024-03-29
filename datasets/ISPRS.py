@@ -420,8 +420,9 @@ class ISPRSDataset(PointCloudDataset):
                         weak_labels = self.input_labels[cloud_ind][weak_inds]
                         weak_labels = np.array([self.label_to_idx[l] for l in weak_labels])
 
-                    # Data augmentation
-                    weak_points, _, _ = self.augmentation_transform(weak_points,scale,R)
+                    # Data augmentation from the same point
+                    weak_inds4input_points = np.in1d(input_inds, weak_inds)
+                    weak_points = input_points[weak_inds4input_points]
                     
                     # Color augmentation
                     if np.random.rand() > self.config.augment_color:
@@ -454,8 +455,6 @@ class ISPRSDataset(PointCloudDataset):
                     print('Input labels: ', input_labels)
                     if self.config.weak_supervision:
                         print('Weak inds: ', weak_inds)
-                        print('Weak points: ', weak_points)
-                        print('Weak labels: ', weak_labels)
                     raise ValueError('No weak supervision for this cloud')
                 
 
@@ -845,6 +844,8 @@ class ISPRSDataset(PointCloudDataset):
                 data = read_ply(sub_ply_file)
                 sub_features = np.vstack((data['f1'], data['f2'], data['f3'])).T
                 sub_labels = data['class']
+                
+                sub_points = np.vstack((data['x'], data['y'], data['z'])).T
 
                 # Read pkl with search tree
                 with open(KDTree_file, 'rb') as f:
@@ -883,7 +884,7 @@ class ISPRSDataset(PointCloudDataset):
                           ['x', 'y', 'z', 'f1', 'f2', 'f3', 'class'])
            
             if self.config.weak_supervision:
-                percentage = self.config.weak_supervision_percentage
+                percentage = self.config.weak_supervision_perc
                 ws_in_radius = self.config.weak_supervision_in_radius
                 weak_supervision_inds_file = join(tree_path, '{:s}_ws_inds{:.1f}_radius{:.1f}.npy'.format(cloud_name, percentage, ws_in_radius))
                 # Create weak supervision labels index
@@ -1661,7 +1662,7 @@ class ISPRSCustomBatchWeak:
         return
     
     def values(self):
-        return self.origin_batch, self.weak_batch
+        return self.weak_batch, self.origin_batch
 
 
 def ISPRSCollateWeak(batch_data):
