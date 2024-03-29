@@ -273,6 +273,8 @@ class ISPRSDataset(PointCloudDataset):
             i_list_weak = []
             pi_list_weak = []
             ci_list_weak = []
+            s_list_weak = []
+            R_list_weak = []
 
         info = get_worker_info()
         if info is not None:
@@ -421,8 +423,10 @@ class ISPRSDataset(PointCloudDataset):
                         weak_labels = np.array([self.label_to_idx[l] for l in weak_labels])
 
                     # Data augmentation from the same point
-                    weak_inds4input_points = np.in1d(input_inds, weak_inds)
-                    weak_points = input_points[weak_inds4input_points]
+                    # weak_inds4input_points = np.in1d(input_inds, weak_inds)
+                    # weak_points = input_points[weak_inds4input_points]
+                    
+                    weak_points, weak_scale, weak_R = self.augmentation_transform(weak_points)
                     
                     # Color augmentation
                     if np.random.rand() > self.config.augment_color:
@@ -440,6 +444,8 @@ class ISPRSDataset(PointCloudDataset):
                     pi_list_weak += [weak_inds]
                     i_list_weak += [point_ind]
                     ci_list_weak += [cloud_ind]
+                    s_list_weak += [scale]
+                    R_list_weak += [R]
                 else:
                     print('No weak supervision for this cloud')
                     print('Cloud name: ', self.cloud_names[cloud_ind])
@@ -508,6 +514,8 @@ class ISPRSDataset(PointCloudDataset):
             weak_cloud_inds = np.array(ci_list_weak, dtype=np.int32)
             weak_input_inds = np.concatenate(pi_list_weak, axis=0)
             stacked_weak_lengths = np.array([pp.shape[0] for pp in p_list_weak], dtype=np.int32)
+            weak_scales = np.array(s_list_weak, dtype=np.float32)
+            weak_rots = np.stack(R_list_weak, axis=0)
             
             stacked_weak_features = np.ones_like(stacked_weak_points[:, :1], dtype=np.float32)
             if self.config.in_features_dim == 1:
@@ -546,7 +554,7 @@ class ISPRSDataset(PointCloudDataset):
                                                        stacked_weak_features,
                                                        weak_labels,
                                                        stacked_weak_lengths)
-            input_weak_list += [scales, rots, weak_cloud_inds, weak_point_inds, weak_input_inds]
+            input_weak_list += [weak_scales, weak_rots, weak_cloud_inds, weak_point_inds, weak_input_inds]
         
         if debug_workers:
             message = ''
