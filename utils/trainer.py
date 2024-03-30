@@ -503,14 +503,14 @@ class ModelTrainer:
     # Validation methods
     # ------------------------------------------------------------------------------------------------------------------
 
-    def validation(self, net, val_loader, config: Config):
+    def validation(self, net, val_loader, config: Config, is_teacher:bool):
 
         if config.dataset_task == 'classification':
             self.object_classification_validation(net, val_loader, config)
         elif config.dataset_task == 'segmentation':
             self.object_segmentation_validation(net, val_loader, config)
         elif config.dataset_task == 'cloud_segmentation':
-            self.cloud_segmentation_validation(net, val_loader, config)
+            self.cloud_segmentation_validation(net, val_loader, config, is_teacher)
         elif config.dataset_task == 'slam_segmentation':
             self.slam_segmentation_validation(net, val_loader, config)
         else:
