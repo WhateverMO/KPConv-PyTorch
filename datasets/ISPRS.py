@@ -84,8 +84,6 @@ class ISPRSDataset(PointCloudDataset):
                                7: 'shurb',
                                8: 'Tree'
                                }
-        
-        self.weak_learning_label = config.weak_learning_label
 
         # Initialize a bunch of variables concerning class labels
         self.init_labels()
@@ -175,7 +173,8 @@ class ISPRSDataset(PointCloudDataset):
         self.num_clouds = 0
         self.test_proj = []
         self.validation_labels = []
-        if self.config.weak_supervision:
+        if self.config.weak_supervision:   
+            self.weak_learning_label = config.weak_learning_label
             self.weak_inds = []
 
         # Start loading
