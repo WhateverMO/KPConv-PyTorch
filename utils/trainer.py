@@ -340,9 +340,7 @@ class ModelTrainer:
                 remove(PID_file)
 
             self.step = 0
-            for two_batches in training_loader:
-                
-                batch, teacher_batch = two_batches.values()
+            for batch in training_loader:
 
                 # Check kill signal (running_PID.txt deleted)
                 if config.saving and not exists(PID_file):
@@ -367,7 +365,7 @@ class ModelTrainer:
                 loss_student = student_net.loss(outputs, batch.labels)
                 acc = student_net.accuracy(outputs, batch.labels)
                 
-                outputs_teacher = teacher_net(teacher_batch, config)
+                outputs_teacher = teacher_net(batch, config)
                 
                 # kl_loss for output and output_teacher
                 consistency_loss = nn.KLDivLoss(reduction='batchmean')(nn.functional.log_softmax(outputs, dim=1), nn.functional.softmax(outputs_teacher, dim=1))
