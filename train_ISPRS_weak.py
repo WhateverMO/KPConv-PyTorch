@@ -335,7 +335,7 @@ if __name__ == '__main__':
 
     # Define a trainer class
     if config.weak_supervision:
-        trainer = ModelTrainer(net, config, chkp_path=chosen_chkp, net_teacker=net_teacher)
+        trainer = ModelTrainer(net, config, chkp_path=chosen_chkp, net_teacher=net_teacher)
     else:
         trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
     print('Done in {:.1f}s\n'.format(time.time() - t1))
