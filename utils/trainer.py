@@ -691,7 +691,7 @@ class ModelTrainer:
         t1 = time.time()
 
         # Start validation loop
-        for batch in enumerate(val_loader):
+        for i, batch in enumerate(val_loader):
             
             if is_teacher:
                 teacher_name = 'teacher_'
