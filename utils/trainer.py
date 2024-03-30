@@ -689,14 +689,14 @@ class ModelTrainer:
 
 
         t1 = time.time()
+        
+        if is_teacher:
+            teacher_name = 'teacher_'
+        else:
+            teacher_name = ''
 
         # Start validation loop
         for i, batch in enumerate(val_loader):
-            
-            if is_teacher:
-                teacher_name = 'teacher_'
-            else:
-                teacher_name = ''
             
             # New time
             t = t[-1:]
@@ -744,8 +744,8 @@ class ModelTrainer:
             # Display
             if (t[-1] - last_display) > 1.0:
                 last_display = t[-1]
-                message = teacher_name + 'Validation : {:.1f}% (timings : {:4.2f} {:4.2f})'
-                print(message.format(100 * i / config.validation_size,
+                message = 'Validation : {:.1f}% (timings : {:4.2f} {:4.2f})'
+                print(teacher_name,message.format(100 * i / config.validation_size,
                                      1000 * (mean_dt[0]),
                                      1000 * (mean_dt[1])))
 
@@ -828,7 +828,7 @@ class ModelTrainer:
 
         # Print instance mean
         mIoU = 100 * np.mean(IoUs)
-        print(teacher_name + '{:s} mean IoU = {:.1f}%'.format(config.dataset, mIoU))
+        print(teacher_name,'{:s} mean IoU = {:.1f}%'.format(config.dataset, mIoU))
 
         # Save predicted cloud occasionally
         if config.saving and (self.epoch + 1) % config.checkpoint_gap == 0:
