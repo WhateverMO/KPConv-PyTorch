@@ -1717,9 +1717,7 @@ class ISPRSCustomBatchWeak:
         ind += 1
         self.input_inds = torch.from_numpy(input_list[ind])
         ind += 1
-        self.points_weak_inds = torch.from_numpy(input_list[ind])
-        print('ISPRSCustomBatchWeak:')
-        print([i.shape for i in self.points_weak_inds])
+        self.points_weak_inds = [torch.from_numpy(nparray) for nparray in input_list[ind]]
 
         return
 
@@ -1740,6 +1738,7 @@ class ISPRSCustomBatchWeak:
         self.cloud_inds = self.cloud_inds.pin_memory()
         self.center_inds = self.center_inds.pin_memory()
         self.input_inds = self.input_inds.pin_memory()
+        self.points_weak_inds = [in_tensor.pin_memory() for in_tensor in self.points_weak_inds]
 
         return self
 
@@ -1757,6 +1756,7 @@ class ISPRSCustomBatchWeak:
         self.cloud_inds = self.cloud_inds.to(device)
         self.center_inds = self.center_inds.to(device)
         self.input_inds = self.input_inds.to(device)
+        self.points_weak_inds = [in_tensor.to(device) for in_tensor in self.points_weak_inds]
 
         return self
 
