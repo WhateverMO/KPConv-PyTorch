@@ -634,7 +634,8 @@ class ISPRSDataset(PointCloudDataset):
             print('\n************************\n')
         if self.config.weak_supervision:
             input_list += [points_weak_inds]
-            print('Weak inds: ', points_weak_inds)
+            print('Weak inds: ')
+            print([points_weak_inds[i].shape for i in range(len(points_weak_inds))])
         #     ret = {
         #         0: input_list,
         #         1: input_weak_list
@@ -1717,7 +1718,8 @@ class ISPRSCustomBatchWeak:
         self.input_inds = torch.from_numpy(input_list[ind])
         ind += 1
         self.points_weak_inds = torch.from_numpy(input_list[ind])
-        print('ISPRSCustomBatchWeak:',self.points_weak_inds.shape)
+        print('ISPRSCustomBatchWeak:')
+        print([i.shape for i in self.points_weak_inds])
 
         return
 
