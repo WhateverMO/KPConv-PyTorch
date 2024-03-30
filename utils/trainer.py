@@ -510,7 +510,7 @@ class ModelTrainer:
         elif config.dataset_task == 'segmentation':
             self.object_segmentation_validation(net, val_loader, config)
         elif config.dataset_task == 'cloud_segmentation':
-            self.cloud_segmentation_validation(net, val_loader, config, is_teacher)
+            self.cloud_segmentation_validation(net, val_loader, config, is_teacher=is_teacher)
         elif config.dataset_task == 'slam_segmentation':
             self.slam_segmentation_validation(net, val_loader, config)
         else:
