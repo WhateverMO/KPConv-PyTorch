@@ -57,7 +57,7 @@ class ModelTrainer:
     # Initialization methods
     # ------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, net, config, chkp_path=None, finetune=False, on_gpu=True):
+    def __init__(self, net, config, chkp_path=None, finetune=False, on_gpu=True,net_teacher=None):
         """
         Initialize training parameters and reload previous model for restore/finetune
         :param net: network object
@@ -91,6 +91,8 @@ class ModelTrainer:
         else:
             self.device = torch.device("cpu")
         net.to(self.device)
+        if config.weak_supervision:
+            net_teacher.to(self.device)
 
         ##########################
         # Load previous checkpoint

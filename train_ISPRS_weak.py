@@ -319,7 +319,7 @@ if __name__ == '__main__':
     net = KPFCNN(config, training_dataset.label_values, training_dataset.ignored_labels)
 
     if config.weak_supervision:
-        net_teacker = KPFCNN(config, training_dataset.label_values, training_dataset.ignored_labels)
+        net_teacher = KPFCNN(config, training_dataset.label_values, training_dataset.ignored_labels)
     
     debug = False
     if debug:
@@ -334,7 +334,10 @@ if __name__ == '__main__':
         print('\n*************************************\n')
 
     # Define a trainer class
-    trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
+    if config.weak_supervision:
+        trainer = ModelTrainer(net, config, chkp_path=chosen_chkp, net_teacker=net_teacher)
+    else:
+        trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
     print('Done in {:.1f}s\n'.format(time.time() - t1))
 
     print('\nStart training')
@@ -342,7 +345,7 @@ if __name__ == '__main__':
 
     # Training
     if config.weak_supervision:
-        trainer.train_weakly(net, net_teacker, training_loader, test_loader, config)
+        trainer.train_weakly(net, net_teacher, training_loader, test_loader, config)
     else:
         trainer.train(net, training_loader, test_loader, config)
         

@@ -634,8 +634,6 @@ class ISPRSDataset(PointCloudDataset):
             print('\n************************\n')
         if self.config.weak_supervision:
             input_list += [points_weak_inds]
-            print('Weak inds: ')
-            print([points_weak_inds[i].shape for i in range(len(points_weak_inds))])
         #     ret = {
         #         0: input_list,
         #         1: input_weak_list
