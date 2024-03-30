@@ -24,6 +24,7 @@
 # Common libs
 import signal
 import os
+import copy
 
 # Dataset
 from datasets.ISPRS import *
@@ -54,6 +55,7 @@ class ISPRSConfig(Config):
     
     # weak supervision
     weak_supervision = True
+    weak_learning_label = 10
     weak_supervision_perc = 0.01
     weak_supervision_in_radius = 1
     ema_keep_rate = 0.955
@@ -274,31 +276,29 @@ if __name__ == '__main__':
     # Get path from argument if given
     if len(sys.argv) > 1:
         config.saving_path = sys.argv[1]
+    config_test = copy.deepcopy(config)
+    config_test.weak_supervision = False
 
     # Initialize datasets
     training_dataset = ISPRSDataset(config, set='training', use_potentials=True)
-    test_dataset = ISPRSDataset(config, set='validation', use_potentials=True)
+    test_dataset = ISPRSDataset(config_test, set='validation', use_potentials=True)
 
     # Initialize samplers
     training_sampler = ISPRSSampler(training_dataset)
     test_sampler = ISPRSSampler(test_dataset)
 
-    if config.weak_supervision:
-        collate_fn = ISPRSCollateWeak
-    else:
-        collate_fn = ISPRSCollate
 
     # Initialize the dataloader
     training_loader = DataLoader(training_dataset,
                                  batch_size=1,
                                  sampler=training_sampler,
-                                 collate_fn=collate_fn,
+                                 collate_fn=ISPRSCollateWeak,
                                  num_workers=config.input_threads,
                                  pin_memory=True)
     test_loader = DataLoader(test_dataset,
                              batch_size=1,
                              sampler=test_sampler,
-                             collate_fn=collate_fn,
+                             collate_fn=ISPRSCollate,
                              num_workers=config.input_threads,
                              pin_memory=True)
 

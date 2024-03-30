@@ -364,7 +364,7 @@ class ModelTrainer:
 
                 # Forward pass
                 outputs = student_net(batch, config)
-                loss_student = student_net.loss_weak(outputs, batch.labels, batch.points_weak_inds)
+                loss_student = student_net.loss(outputs, batch.labels)
                 acc = student_net.accuracy(outputs, batch.labels)
                 
                 outputs_teacher = teacher_net(batch, config)

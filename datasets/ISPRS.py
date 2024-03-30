@@ -85,7 +85,7 @@ class ISPRSDataset(PointCloudDataset):
                                8: 'Tree'
                                }
         
-        self.max_label = len(self.label_to_names.keys()) - 1
+        self.weak_learning_label = config.weak_learning_label
 
         # Initialize a bunch of variables concerning class labels
         self.init_labels()
@@ -392,7 +392,7 @@ class ISPRSDataset(PointCloudDataset):
                 
                 points_weak_inds += [weak_inds]
                 
-                weak_label = self.max_label + 1
+                weak_label = self.weak_learning_label
                 
                 # change label of weak points to weak_label
                 input_labels[weak_inds4input_points] = weak_label
