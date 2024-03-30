@@ -364,7 +364,7 @@ class ModelTrainer:
 
                 # Forward pass
                 outputs = student_net(batch, config)
-                loss_student = student_net.loss(outputs, batch.labels)
+                loss_student = student_net.loss_weak(outputs, batch.labels, batch.points_weak_inds)
                 acc = student_net.accuracy(outputs, batch.labels)
                 
                 outputs_teacher = teacher_net(batch, config)
@@ -691,13 +691,11 @@ class ModelTrainer:
         t1 = time.time()
 
         # Start validation loop
-        for i, two_batch in enumerate(val_loader):
+        for batch in enumerate(val_loader):
             
             if is_teacher:
-                _ , batch = two_batch
                 teacher_name = 'teacher_'
             else:
-                batch, _ = two_batch
                 teacher_name = ''
             
             # New time

@@ -373,6 +373,42 @@ class KPFCNN(nn.Module):
 
         # Combined loss
         return self.output_loss + self.reg_loss
+    
+    def loss_weak(self, outputs, labels, mask):
+        """
+        Runs the loss on outputs of the model
+        :param outputs: logits
+        :param labels: labels
+        :return: loss
+        """
+
+        # Set all ignored labels to -1 and correct the other label to be in [0, C-1] range
+        target = - torch.ones_like(labels)
+        for i, c in enumerate(self.valid_labels):
+            target[labels == c] = i
+
+        # Reshape to have a minibatch size of 1
+        outputs = torch.transpose(outputs, 0, 1)
+        outputs = outputs.unsqueeze(0)
+        target = target.unsqueeze(0)
+        
+        # only compute loss on masked points
+        outputs = outputs * mask
+        target = target * mask
+
+        # Cross entropy loss
+        self.output_loss = self.criterion(outputs, target)
+
+        # Regularization of deformable offsets
+        if self.deform_fitting_mode == 'point2point':
+            self.reg_loss = p2p_fitting_regularizer(self)
+        elif self.deform_fitting_mode == 'point2plane':
+            raise ValueError('point2plane fitting mode not implemented yet.')
+        else:
+            raise ValueError('Unknown fitting mode: ' + self.deform_fitting_mode)
+
+        # Combined loss
+        return self.output_loss + self.reg_loss
 
     def accuracy(self, outputs, labels):
         """
