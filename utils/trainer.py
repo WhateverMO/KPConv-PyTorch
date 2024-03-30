@@ -503,7 +503,7 @@ class ModelTrainer:
     # Validation methods
     # ------------------------------------------------------------------------------------------------------------------
 
-    def validation(self, net, val_loader, config: Config, is_teacher:bool):
+    def validation(self, net, val_loader, config: Config, is_teacher:bool=False):
 
         if config.dataset_task == 'classification':
             self.object_classification_validation(net, val_loader, config)
