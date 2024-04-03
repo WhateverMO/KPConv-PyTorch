@@ -60,11 +60,11 @@ for c_i,each_file in enumerate(files_pred):
     print('\n Loading.... ', os.path.join(test_predictions_path, each_file))
     data_pred = PlyData.read(os.path.join(test_predictions_path, each_file))
     data_grtr = PlyData.read(os.path.join(test_groundtruth_path, each_file))
-    # y_true = data_grtr.elements[0]['class']
-    # y_pred = data_pred.elements[0]['preds']
+    y_true = data_grtr.elements[0]['class']
+    y_pred = data_pred.elements[0]['preds']
 
-    y_true = data_grtr.elements[0]['label'].astype(np.int32)
-    y_pred = data_pred.elements[0]['pred'].astype(np.int32)
+    # y_true = data_grtr.elements[0]['label'].astype(np.int32)
+    # y_pred = data_pred.elements[0]['pred'].astype(np.int32)
     print(y_true.shape, y_pred.shape)
     ytrue+=[y_true]
     ypred+=[y_pred]
