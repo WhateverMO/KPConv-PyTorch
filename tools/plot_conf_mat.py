@@ -4,6 +4,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 
+auto = False
+
 # 绘制混淆矩阵
 def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues, name='conf'):
     """
@@ -45,6 +47,7 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     plt.ylabel('True label', font)
     plt.xlabel('Predicted label', font)
     # plt.savefig(name + '.png', dpi=300)
+    plt.savefig(auto+'conf.png')
     plt.show()
 
 #
@@ -62,13 +65,16 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
 #
 # attack_types = ['Bathtub', 'Bed', 'Bookshelf', 'Cabinet', 'Chair', 'Lamp', 'Monitor', 'Plant', 'Sofa', 'Table',]
 
-def plot_conf_mat(attack_types = None,conf_path = None):
+def plot_conf_mat(conf_path = None, attack_types = None):
     print('plot confusion matrix start')
-    if conf_path is not None:
+    if conf_path is None:
         path = r'D:\Python\KPConv-PyTorch-master\KPConv-PyTorch-master\test_HSCN\A\conf.txt'
     else:
+        global auto
+        auto = conf_path.split('/')
+        auto = auto[1]+'_'+auto[2]
         path = conf_path
-    cnf_matrix_unsu_m2r=np.loadtxt()
+    cnf_matrix_unsu_m2r=np.loadtxt(path)
     if attack_types is None:
         attack_types = ['Powerline', 'Low vegetation', 'surface', 'Car', 'Fence', 'Roof', 'Facade', 'shurb', 'Tree',]
 

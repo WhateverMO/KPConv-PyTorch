@@ -44,3 +44,35 @@
 # print(origin_data)
 # print(weak_data)
 # print(need_data)
+
+# import sys
+
+# class Logger(object):
+#     def __init__(self, filename='output.txt'):
+#         self.terminal = sys.stdout
+#         self.log = open(filename, 'w')
+
+#     def write(self, message):
+#         self.terminal.write(message)
+#         self.log.write(message)
+
+#     def flush(self):
+#         # this flush method is needed for python 3 compatibility.
+#         # this handles the flush command by doing nothing.
+#         # you might want to specify some extra behavior here.
+#         pass
+
+# # Redirect stdout
+# sys.stdout = Logger('output.txt')
+
+# # Now, any print statements will write to both the file and the console
+# print('This will be written to the file and console')
+# print('This will be written to the file and console')
+# from os.path import join
+# log_path = 'results/log'
+# max_epoch = '100'
+# path = join(log_path,'val_preds_'+max_epoch,'conf.txt')
+
+# # get the second word of path
+# second_word = path.split('/')[1]
+# print(second_word)
