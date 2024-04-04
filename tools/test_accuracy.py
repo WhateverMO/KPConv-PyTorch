@@ -20,6 +20,7 @@ def test_accuracy(test_predictions_path=None, test_groundtruth_path=None, label_
     #                 2: 'tree',
     #                 3: 'low_evg',
     #                 4: 'artifact'}
+    print('test accuracy start')
     if label_to_names is None:
         label_to_names= {0: 'powerline',
                             1: 'low vegetation',
@@ -123,6 +124,8 @@ def test_accuracy(test_predictions_path=None, test_groundtruth_path=None, label_
     # MIOU=sum(total_list_miou)/len(total_list_miou)
     # ACC=sum(acc_list)/len(acc_list)
     print(  "|  Avg  F1(macro) : ", F12.sum()/len(label_values),"|  Avg  miou : ",IoU2.sum()/len(label_values),"|  ACC : ",ACC2)
+    print("test accuracy end")
+    print()
     
 if __name__ == '__main__':
     test_accuracy()

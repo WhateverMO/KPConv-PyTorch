@@ -19,6 +19,7 @@ def random_colors(N, bright=True, seed=0):
 
 
 def label_to_color(origin_xyz=None,train_points_path=None):
+    print('label to color start')
     if origin_xyz is None:
         origin_xyz=r'D:\Python\KPConv-PyTorch-master\KPConv-PyTorch-master\test_H3D\kpconv\val_preds_160'
     if train_points_path is None:
@@ -136,6 +137,8 @@ def label_to_color(origin_xyz=None,train_points_path=None):
         print(color.shape)
         write_ply(os.path.join(error_path,each_file), [data2, color_error, label2],
                 ['x', 'y', 'z', 'red', 'green', 'blue', 'class'])
+    print('label to color end')
+    print()
         
 if __name__ == '__main__':
     label_to_color()

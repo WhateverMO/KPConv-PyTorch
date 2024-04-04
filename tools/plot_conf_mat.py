@@ -63,6 +63,7 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
 # attack_types = ['Bathtub', 'Bed', 'Bookshelf', 'Cabinet', 'Chair', 'Lamp', 'Monitor', 'Plant', 'Sofa', 'Table',]
 
 def plot_conf_mat(attack_types = None,conf_path = None):
+    print('plot confusion matrix start')
     if conf_path is not None:
         path = r'D:\Python\KPConv-PyTorch-master\KPConv-PyTorch-master\test_HSCN\A\conf.txt'
     else:
@@ -72,6 +73,8 @@ def plot_conf_mat(attack_types = None,conf_path = None):
         attack_types = ['Powerline', 'Low vegetation', 'surface', 'Car', 'Fence', 'Roof', 'Facade', 'shurb', 'Tree',]
 
     plot_confusion_matrix(cnf_matrix_unsu_m2r, classes=attack_types, normalize=True, title='Normalized confusion matrix', name='2024_confusion_matrix_unsu_m2r')
+    print('plot confusion matrix end')
+    print()
 
 if __name__ == '__main__':
     plot_conf_mat()

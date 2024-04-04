@@ -88,6 +88,7 @@ def model_choice(chosen_log):
 
 
 def test_models(chosen_log=None):
+    print('Start testing models')
 
     ###############################
     # Choose the model to visualize
@@ -229,6 +230,8 @@ def test_models(chosen_log=None):
     else:
         raise ValueError('Unsupported dataset_task for testing: ' + config.dataset_task)
  
+    print('\nEnd of testing models')
+    print()
 
 if __name__ == '__main__':
     test_models()

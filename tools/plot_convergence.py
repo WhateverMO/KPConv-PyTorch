@@ -787,6 +787,7 @@ def experiment_name_2(location=None):
 #
 
 def plot_convergence(location=None):
+    print('plot convergence start')
 
     ######################################################
     # Choose a list of log to plot together for comparison
@@ -836,6 +837,10 @@ def plot_convergence(location=None):
             compare_convergences_SLAM(dataset, logs, logs_names)
     else:
         raise ValueError('Unsupported dataset : ' + plot_dataset)
+
+    print('plot convergence end')
+    print()
+
 
 
 if __name__ == '__main__':

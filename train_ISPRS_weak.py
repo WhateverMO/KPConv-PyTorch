@@ -221,7 +221,7 @@ class ISPRSConfig(Config):
 #       \***************/
 #
 
-def train_ISPRS_weak_main(out_pipe,in_pipe):
+def train_ISPRS_weak_main(queue):
 
     ############################
     # Initialize the environment
@@ -350,21 +350,23 @@ def train_ISPRS_weak_main(out_pipe,in_pipe):
         trainer.train(net, training_loader, test_loader, config)
     
     res = (test_dataset.path, config)  
-    in_pipe.send(res)  
+    queue.put(res)
     
     print('Forcing exit now')
     os.kill(os.getpid(), signal.SIGINT)
 
 
 def train_ISPRS_weak():
-    from multiprocessing import Pipe, Process
-    out_pipe, in_pipe = Pipe(True)
-    p = Process(target=train_ISPRS_weak_main, args=(out_pipe,in_pipe))
+    print('Starting training ISPRS weakly supervised')
+    from multiprocessing import Queue, Process
+    queue = Queue()
+    p = Process(target=train_ISPRS_weak_main, args=(queue,))
     p.start()
-    res = in_pipe.recv()
-    out_pipe.close()
-    in_pipe.close()
+    res = queue.get()
+    queue.close()
     p.join()
+    print('Training done')
+    print()
     return res
 
 if __name__ == '__main__':
