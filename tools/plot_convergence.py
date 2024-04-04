@@ -317,6 +317,8 @@ def compare_trainings(list_of_paths, list_of_labels=None):
     # Display legends and title
     plt.legend(loc=1)
     plt.title('Losses compare')
+    # save figures
+    plt.savefig(auto+'loss.png')
 
     # Customize the graph
     ax = fig.gca()
@@ -345,8 +347,7 @@ def compare_trainings(list_of_paths, list_of_labels=None):
     # ax.set_yticks(np.arange(0.8, 1.02, 0.02))
 
     # save figures
-    plt.savefig('loss.png')
-    plt.savefig('time.png')
+    plt.savefig(auto+'time.png')
 
     # Show all
     plt.show()
@@ -465,7 +466,7 @@ def compare_convergences_segment(dataset, list_of_paths, list_of_names=None):
             #ax.set_yticks(np.arange(0.8, 1.02, 0.02))
 
     # save figures
-    plt.savefig('mIoUs.png')
+    plt.savefig(auto+'mIoUs.png')
 
     # Show all
     plt.show()
@@ -759,7 +760,7 @@ def experiment_name_2(location=None):
         end = 'Log_2024-03-17_11-13-25'
     else:
         global auto
-        auto = True
+        auto = location
         start = location
         end = location
 

@@ -68,3 +68,11 @@
 # # Now, any print statements will write to both the file and the console
 # print('This will be written to the file and console')
 # print('This will be written to the file and console')
+# from os.path import join
+# log_path = 'results/log'
+# max_epoch = '100'
+# path = join(log_path,'val_preds_'+max_epoch,'conf.txt')
+
+# # get the second word of path
+# second_word = path.split('/')[1]
+# print(second_word)
