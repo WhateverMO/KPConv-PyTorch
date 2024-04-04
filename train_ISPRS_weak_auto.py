@@ -12,11 +12,11 @@ if __name__ == '__main__':
     log_path = config.saving_path
     log_name = config.saving_path.split('/')[-1]
     dataset_original_path = join(dataset_path,'original_ply')
-    plot_convergence(log_path)
+    plot_convergence(log_name)
     plot_conf_mat(join(log_path,'val_preds_'+max_epoch,'conf.txt'))
     label_to_color(dataset_original_path,join(log_path,'val_preds_'+max_epoch))
-    # plot_convergence(log_path)
-    plot_conf_mat(join(log_path,'teacher_val_preds_'+max_epoch,'conf.txt'))
+    # plot_convergence(log_name)
+    # plot_conf_mat(join(log_path,'teacher_val_preds_'+max_epoch,'conf.txt'))
     label_to_color(dataset_original_path,join(log_path,'teacher_val_preds_'+max_epoch))
     test_models(log_path)
     test_accuracy(join('test',log_name,'predictions'),dataset_original_path)

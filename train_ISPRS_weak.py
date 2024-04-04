@@ -340,6 +340,9 @@ def train_ISPRS_weak_main(queue):
         trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
     print('Done in {:.1f}s\n'.format(time.time() - t1))
 
+    from tools.logger import redirect_stdout
+    redirect_stdout(os.path.join(config.saving_path, 'log.txt'))
+
     print('\nStart training')
     print('**************')
 
