@@ -71,7 +71,8 @@ def plot_conf_mat(conf_path = None, attack_types = None):
         path = r'D:\Python\KPConv-PyTorch-master\KPConv-PyTorch-master\test_HSCN\A\conf.txt'
     else:
         global auto
-        auto = conf_path.split('/')[1]
+        auto = conf_path.split('/')
+        auto = auto[1]+'_'+auto[2]
         path = conf_path
     cnf_matrix_unsu_m2r=np.loadtxt(path)
     if attack_types is None:
