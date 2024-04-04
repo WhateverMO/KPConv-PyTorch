@@ -44,6 +44,10 @@ class Config:
     dataset = ''
     
     weak_supervision = False
+    # weak_learning_label = 10
+    # weak_supervision_perc = 0.01
+    # weak_supervision_in_radius = 1
+    # ema_keep_rate = 0.955
 
     # Type of network model
     dataset_task = ''
