@@ -48,6 +48,8 @@ from datasets.SemanticKitti import SemanticKittiDataset
 #       \***********************/
 #
 
+auto = False
+
 def listdir_str(path):
 
     # listdir can return binary string instead od decoded string sometimes.
@@ -342,6 +344,10 @@ def compare_trainings(list_of_paths, list_of_labels=None):
     ax.grid(linestyle='-.', which='both')
     # ax.set_yticks(np.arange(0.8, 1.02, 0.02))
 
+    # save figures
+    plt.savefig('loss.png')
+    plt.savefig('time.png')
+
     # Show all
     plt.show()
 
@@ -457,6 +463,9 @@ def compare_convergences_segment(dataset, list_of_paths, list_of_names=None):
             ax = fig.gca()
             ax.grid(linestyle='-.', which='both')
             #ax.set_yticks(np.arange(0.8, 1.02, 0.02))
+
+    # save figures
+    plt.savefig('mIoUs.png')
 
     # Show all
     plt.show()
@@ -749,6 +758,8 @@ def experiment_name_2(location=None):
         start = 'Log_2024-03-17_11-13-25'
         end = 'Log_2024-03-17_11-13-25'
     else:
+        global auto
+        auto = True
         start = location
         end = location
 
