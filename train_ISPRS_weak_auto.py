@@ -13,7 +13,7 @@ if __name__ == '__main__':
     log_path = config.saving_path
     log_name = config.saving_path.split('/')[-1]
     dataset_original_path = join(dataset_path,'original_ply')
-    redirect_stdout(join(log_path,'log.txt'))
+    redirect_stdout(join(log_path,'log_auto.txt'))
     plot_convergence(log_name)
     plot_conf_mat(join(log_path,'val_preds_'+max_epoch,'conf.txt'))
     label_to_color(dataset_original_path,join(log_path,'val_preds_'+max_epoch))
