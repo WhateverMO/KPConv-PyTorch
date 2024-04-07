@@ -387,7 +387,10 @@ class ISPRSDataset(PointCloudDataset):
                 # calculate the intersection of the input_inds and all_weak_inds
                 weak_inds = np.intersect1d(input_inds, all_weak_inds)
                 
-                weak_inds4input_points = np.in1d(input_inds, weak_inds)
+                # calculate the difference of the input_inds and weak_inds
+                weak_mask_inds = np.setdiff1d(input_inds, weak_inds)
+                
+                weak_inds4input_points = np.in1d(input_inds, weak_mask_inds)
                 
                 points_weak_inds += [weak_inds]
                 
@@ -914,7 +917,7 @@ class ISPRSDataset(PointCloudDataset):
             if self.config.weak_supervision:
                 percentage = self.config.weak_supervision_perc
                 ws_in_radius = self.config.weak_supervision_in_radius
-                weak_supervision_inds_file = join(tree_path, '{:s}_ws_inds{:.1f}_radius{:.1f}.npy'.format(cloud_name, percentage, ws_in_radius))
+                weak_supervision_inds_file = join(tree_path, '{:s}_ws_inds{:.5f}_radius{:.5f}.npy'.format(cloud_name, percentage, ws_in_radius))
                 # Create weak supervision labels index
                 # Uniform distribution of labels
                 if exists(weak_supervision_inds_file):
@@ -922,14 +925,39 @@ class ISPRSDataset(PointCloudDataset):
                         selected_inds = np.load(f)
                 else:
                     points_sum = search_tree.data.shape[0]
+                    print('all points', points_sum)
                     selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
-                    while selected_inds.shape[0] < int(points_sum * percentage):
-                        # Get points in the ball
-                        center_point_ind = np.random.randint(points_sum)
-                        inds = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1),
-                                                        r=ws_in_radius)[0]
-                        selected_inds = np.concatenate((selected_inds, inds))
-                        selected_inds = np.unique(selected_inds)
+                    selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+                    cloud_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+                    
+                    # check if the selected points are enough to cover all classes
+                    while np.any(selected_counts < cloud_counts * percentage):
+                        print('not enough selected points, reselecting')
+                        selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
+                        while selected_inds.shape[0] < int(points_sum * percentage):
+                            # Get points in the ball
+                            center_point_ind = np.random.randint(points_sum)
+                            inds = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1),
+                                                            r=ws_in_radius)[0]
+                            selected_inds = np.concatenate((selected_inds, inds))
+                            selected_inds = np.unique(selected_inds)
+                            print('selected_inds.shape', selected_inds.shape)
+                            
+                        # count the number of selected points by class
+                        selected_labels = sub_labels[selected_inds]
+                        selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+                        for l in selected_labels:
+                            selected_counts[l] += 1
+                        print('selected_counts', selected_counts)
+                        
+                        # count the number of points in each class in the whole cloud
+                        cloud_labels = self.input_labels[i]
+                        cloud_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+                        for l in cloud_labels:
+                            cloud_counts[l] += 1
+                        print('cloud_counts', cloud_counts)
+                    
+                    
                     # Save weak supervision indices
                     with open(weak_supervision_inds_file, 'wb') as f:
                         np.save(f, selected_inds)
