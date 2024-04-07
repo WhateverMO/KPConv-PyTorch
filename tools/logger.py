@@ -34,6 +34,6 @@ class Logger(object):
 def create_logger():
     return Logger()
 
-def redirect_logger(filename):
+def redirect_stdout(filename):
     sys.stdout = create_logger()
     sys.stdout.redirect(filename)
