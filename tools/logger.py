@@ -1,24 +1,35 @@
 import sys
 
 class Logger(object):
-    def __init__(self, filename='output.txt'):
+    def __init__(self):
         self.terminal = sys.stdout
-        self.log = open(filename, 'w', buffering=1)
+        self.log = False
+        self.buffer = []
 
     def write(self, message):
         self.terminal.write(message)
-        self.log.write(message)
-        self.log.flush()
+        if not self.log:
+            self.buffer.append(message)
+        else:
+            self.log.write(message)
+            self.log.flush()
 
     def flush(self):
         # this flush method is needed for python 3 compatibility.
         # this handles the flush command by doing nothing.
         # you might want to specify some extra behavior here.
         pass
+    
+    def redirect(self, filename):
+        self.log = open(filename, "w")
+        for message in self.buffer:
+            self.log.write(message)
+        self.log.flush()
+        self.buffer = []
 
     def __del__(self):
         self.log.close()
 
-# Redirect stdout
-def redirect_stdout(filename):
-    sys.stdout = Logger(filename)
+# create Logger
+def create_logger():
+    return Logger()

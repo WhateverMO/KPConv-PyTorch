@@ -33,6 +33,7 @@ from torch.utils.data import DataLoader
 from utils.config import Config
 from utils.trainer import ModelTrainer
 from models.architectures import KPFCNN
+from tools.logger import create_logger
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -226,6 +227,10 @@ def train_ISPRS_weak_main(queue):
     ############################
     # Initialize the environment
     ############################
+    
+    logger = create_logger()
+    
+    sys.stdout = logger
 
     # Set which gpu is going to be used
     GPU_ID = '0'
@@ -340,8 +345,7 @@ def train_ISPRS_weak_main(queue):
         trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
     print('Done in {:.1f}s\n'.format(time.time() - t1))
 
-    from tools.logger import redirect_stdout
-    redirect_stdout(os.path.join(config.saving_path, 'log.txt'))
+    logger.redirect(os.path.join(config.saving_path, 'log.txt'))
 
     print('\nStart training')
     print('**************')
