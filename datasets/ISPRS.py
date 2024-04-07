@@ -931,6 +931,9 @@ class ISPRSDataset(PointCloudDataset):
                     selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
                     for l in selected_labels:
                         selected_counts[l] += 1
+                    cloud_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+                    for l in sub_labels:
+                        cloud_counts[l] += 1
                     print('selected_counts', selected_counts)
                     print('selected_counts / cloud_counts', selected_counts / cloud_counts)
                     print('all selected_counts:', selected_counts.sum(), 'all cloud_counts:', cloud_counts.sum())
