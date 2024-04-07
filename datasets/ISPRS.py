@@ -928,10 +928,10 @@ class ISPRSDataset(PointCloudDataset):
                     print('all points', points_sum)
                     selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
                     selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
-                    cloud_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+                    cloud_counts = np.ones(self.config.num_classes, dtype=np.int32)
                     
-                    # check if the selected points are enough to cover all classes
-                    while np.any(selected_counts < cloud_counts * percentage):
+                    # check if the selected points are covered all classes(every class is bigger than 0)
+                    while np.any(selected_counts == 0):
                         print('not enough selected points, reselecting')
                         selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
                         while selected_inds.shape[0] < int(points_sum * percentage):
@@ -951,11 +951,13 @@ class ISPRSDataset(PointCloudDataset):
                         print('selected_counts', selected_counts)
                         
                         # count the number of points in each class in the whole cloud
-                        cloud_labels = self.input_labels[i]
+                        cloud_labels = sub_labels
                         cloud_counts = np.zeros(self.config.num_classes, dtype=np.int32)
                         for l in cloud_labels:
                             cloud_counts[l] += 1
                         print('cloud_counts', cloud_counts)
+                        
+                        print('selected_counts / cloud_counts', selected_counts / cloud_counts)
                     
                     
                     # Save weak supervision indices
