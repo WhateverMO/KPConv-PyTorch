@@ -398,10 +398,6 @@ class ISPRSDataset(PointCloudDataset):
                 
                 # change label of weak points to weak_label
                 input_labels[weak_inds4input_points] = weak_label
-                
-                # print shape of weak_inds and weak_mask_inds
-                print(weak_inds.shape)
-                print(weak_mask_inds.shape)
             
             t += [time.time()]
 
