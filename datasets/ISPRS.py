@@ -941,7 +941,7 @@ class ISPRSDataset(PointCloudDataset):
                                                             r=ws_in_radius)[0]
                             selected_inds = np.concatenate((selected_inds, inds))
                             selected_inds = np.unique(selected_inds)
-                            print('selected_inds.shape', selected_inds.shape)
+                        print('selected_inds.shape', selected_inds.shape)
                             
                         # count the number of selected points by class
                         selected_labels = sub_labels[selected_inds]
@@ -957,8 +957,10 @@ class ISPRSDataset(PointCloudDataset):
                             cloud_counts[l] += 1
                         print('cloud_counts', cloud_counts)
                         
-                        print('selected_counts / cloud_counts', selected_counts / cloud_counts)
-                    
+                        print('selected_counts / cloud_counts')
+                        print(selected_counts / cloud_counts)
+                        print('all selected_counts:', selected_counts.sum(), 'all cloud_counts:', cloud_counts.sum())
+                        print('selected_counts / cloud_counts:', selected_counts.sum() / cloud_counts.sum())
                     
                     # Save weak supervision indices
                     with open(weak_supervision_inds_file, 'wb') as f:
