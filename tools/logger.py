@@ -33,3 +33,7 @@ class Logger(object):
 # create Logger
 def create_logger():
     return Logger()
+
+def redirect_logger(filename):
+    sys.stdout = create_logger()
+    sys.stdout.redirect(filename)
