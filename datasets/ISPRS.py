@@ -398,6 +398,10 @@ class ISPRSDataset(PointCloudDataset):
                 
                 # change label of weak points to weak_label
                 input_labels[weak_inds4input_points] = weak_label
+                
+                # print shape of weak_inds and weak_mask_inds
+                print(weak_inds.shape)
+                print(weak_mask_inds.shape)
             
             t += [time.time()]
 
@@ -923,6 +927,14 @@ class ISPRSDataset(PointCloudDataset):
                 if exists(weak_supervision_inds_file):
                     with open(weak_supervision_inds_file, 'rb') as f:
                         selected_inds = np.load(f)
+                    selected_labels = sub_labels[selected_inds]
+                    selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+                    for l in selected_labels:
+                        selected_counts[l] += 1
+                    print('selected_counts', selected_counts)
+                    print('selected_counts / cloud_counts', selected_counts / cloud_counts)
+                    print('all selected_counts:', selected_counts.sum(), 'all cloud_counts:', cloud_counts.sum())
+                    print('selected_counts / cloud_counts:', selected_counts.sum() / cloud_counts.sum())
                 else:
                     points_sum = search_tree.data.shape[0]
                     print('all points', points_sum)
