@@ -1197,8 +1197,7 @@ class ISPRSDataset(PointCloudDataset):
             avg_dist = longest_dist / each_class_num
             bias = avg_dist * 0.05
             all_neighbor_inds = np.ndarray(shape=(0,), dtype=np.int32)
-            i = 0
-            while i in range(self.config.num_classes):
+            for i in range(self.config.num_classes):
                 inds = each_class_inds[i]
                 class_selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
                 if len(inds) < each_class_num:
