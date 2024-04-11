@@ -1197,6 +1197,7 @@ class ISPRSDataset(PointCloudDataset):
             avg_dist = longest_dist / each_class_num
             bias = avg_dist * 0.05
             all_neighbor_inds = np.ndarray(shape=(0,), dtype=np.int32)
+            i = 0
             while i in range(self.config.num_classes):
                 inds = each_class_inds[i]
                 class_selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
@@ -1209,16 +1210,13 @@ class ISPRSDataset(PointCloudDataset):
                         inds_in_ball = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=avg_dist)[0]
                         inds_inin_ball = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=avg_dist-bias)[0]
                         inds_shell_1 = np.setdiff1d(inds_in_ball, inds_inin_ball)
-                        if len(inds_shell_1) == 0:
-                            center_point_ind = np.random.choice(np.setdiff1d(inds, all_neighbor_inds))
-                            continue
                         inds_shell = np.setdiff1d(inds_shell_1, all_neighbor_inds)
                         inds_shell = np.setdiff1d(inds_shell, class_selected_inds)
                         if len(inds_shell) == 0:
-                            center_point_ind = np.random.choice(inds_shell_1)
+                            center_point_ind = np.random.choice(np.setdiff1d(inds, all_neighbor_inds))
                             continue
                         center_point_ind = np.random.choice(inds_shell)
-                        class_selected_inds = np.concatenate((class_selected_inds, [center_point_ind]))
+                        class_selected_inds = np.concatenate((class_selected_inds, inds_shell))
                         all_neighbor_inds = np.concatenate((all_neighbor_inds, inds_inin_ball))
                     selected_inds = np.concatenate((selected_inds, class_selected_inds))
                     # unique
