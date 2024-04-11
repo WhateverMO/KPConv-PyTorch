@@ -1215,6 +1215,7 @@ class ISPRSDataset(PointCloudDataset):
                             center_point_ind = np.random.choice(np.setdiff1d(inds, all_neighbor_inds))
                             continue
                         center_point_ind = np.random.choice(inds_shell)
+                        inds_shell = np.intersect1d(inds_shell, each_class_inds[i])
                         class_selected_inds = np.concatenate((class_selected_inds, inds_shell))
                         all_neighbor_inds = np.concatenate((all_neighbor_inds, inds_inin_ball))
                     selected_inds = np.concatenate((selected_inds, class_selected_inds))
