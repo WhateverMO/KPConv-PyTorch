@@ -1213,14 +1213,19 @@ class ISPRSDataset(PointCloudDataset):
                         inds_shell = np.setdiff1d(inds_shell_1, all_neighbor_inds)
                         inds_shell = np.setdiff1d(inds_shell, class_selected_inds)
                         if len(inds_shell) == 0:
+                            j += 1
                             center_point_ind = np.random.choice(np.setdiff1d(inds, all_neighbor_inds))
                             continue
                         center_point_ind = np.random.choice(inds_shell)
                         inds_shell = np.intersect1d(inds_shell, each_class_inds[i])
                         if len(inds_shell) == 0:
                             j += 1
-                            if j > 500:
-                                inds_shell = np.random.choice(each_class_inds[i], size=each_class_num-len(class_selected_inds), replace=False)
+                            continue
+                        if j > 500:
+                            print(i, 'no more points in shell, using random points')
+                            class_selected_inds = np.random.choice(each_class_inds[i], size=each_class_num, replace=False)
+                            break
+                        j = 0
                         class_selected_inds = np.concatenate((class_selected_inds, inds_shell))
                         all_neighbor_inds = np.concatenate((all_neighbor_inds, inds_inin_ball))
                     selected_inds = np.concatenate((selected_inds, class_selected_inds))
