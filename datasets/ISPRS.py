@@ -1228,6 +1228,8 @@ class ISPRSDataset(PointCloudDataset):
                         j = 0
                         class_selected_inds = np.concatenate((class_selected_inds, inds_shell))
                         all_neighbor_inds = np.concatenate((all_neighbor_inds, inds_inin_ball))
+                    # ensure select is not more than each_class_num
+                    class_selected_inds = np.random.choice(class_selected_inds, size=each_class_num, replace=False)
                     selected_inds = np.concatenate((selected_inds, class_selected_inds))
                     # unique
                     all_neighbor_inds = np.unique(all_neighbor_inds)
