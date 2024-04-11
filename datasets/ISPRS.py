@@ -915,67 +915,19 @@ class ISPRSDataset(PointCloudDataset):
                           ['x', 'y', 'z', 'f1', 'f2', 'f3', 'class'])
            
             if self.config.weak_supervision:
+                select_method = self.config.weak_select_method
                 percentage = self.config.weak_supervision_perc
                 ws_in_radius = self.config.weak_supervision_in_radius
-                weak_supervision_inds_file = join(tree_path, '{:s}_ws_inds{:.5f}_radius{:.5f}.npy'.format(cloud_name, percentage, ws_in_radius))
+                weak_supervision_inds_file_name = join(tree_path, '{:s}_ws_inds{:.5f}_radius{:.5f}_{:s}'.format(cloud_name, percentage, ws_in_radius, select_method))
+                weak_supervision_inds_file = weak_supervision_inds_file_name + '.npy'
                 # Create weak supervision labels index
                 # Uniform distribution of labels
-                if exists(weak_supervision_inds_file):
-                    with open(weak_supervision_inds_file, 'rb') as f:
-                        selected_inds = np.load(f)
-                    selected_labels = sub_labels[selected_inds]
-                    selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
-                    for l in selected_labels:
-                        selected_counts[l] += 1
-                    cloud_counts = np.zeros(self.config.num_classes, dtype=np.int32)
-                    for l in sub_labels:
-                        cloud_counts[l] += 1
-                    print('selected_counts', selected_counts)
-                    print('selected_counts / cloud_counts', selected_counts / cloud_counts)
-                    print('all selected_counts:', selected_counts.sum(), 'all cloud_counts:', cloud_counts.sum())
-                    print('selected_counts / cloud_counts:', selected_counts.sum() / cloud_counts.sum())
-                else:
-                    points_sum = search_tree.data.shape[0]
-                    print('all points', points_sum)
-                    selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
-                    selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
-                    cloud_counts = np.ones(self.config.num_classes, dtype=np.int32)
-                    
-                    # check if the selected points are covered all classes(every class is bigger than 0)
-                    while np.any(selected_counts == 0):
-                        print('not enough selected points, reselecting')
-                        selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
-                        while selected_inds.shape[0] < int(points_sum * percentage):
-                            # Get points in the ball
-                            center_point_ind = np.random.randint(points_sum)
-                            inds = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1),
-                                                            r=ws_in_radius)[0]
-                            selected_inds = np.concatenate((selected_inds, inds))
-                            selected_inds = np.unique(selected_inds)
-                        print('selected_inds.shape', selected_inds.shape)
-                            
-                        # count the number of selected points by class
-                        selected_labels = sub_labels[selected_inds]
-                        selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
-                        for l in selected_labels:
-                            selected_counts[l] += 1
-                        print('selected_counts', selected_counts)
-                        
-                        # count the number of points in each class in the whole cloud
-                        cloud_labels = sub_labels
-                        cloud_counts = np.zeros(self.config.num_classes, dtype=np.int32)
-                        for l in cloud_labels:
-                            cloud_counts[l] += 1
-                        print('cloud_counts', cloud_counts)
-                        
-                        print('selected_counts / cloud_counts')
-                        print(selected_counts / cloud_counts)
-                        print('all selected_counts:', selected_counts.sum(), 'all cloud_counts:', cloud_counts.sum())
-                        print('selected_counts / cloud_counts:', selected_counts.sum() / cloud_counts.sum())
-                    
-                    # Save weak supervision indices
-                    with open(weak_supervision_inds_file, 'wb') as f:
-                        np.save(f, selected_inds)
+                if select_method == 'ball_random':
+                    selected_inds = self.select_weak_inds_ball_random(weak_supervision_inds_file, sub_points, sub_labels, search_tree, ws_in_radius, percentage)
+                elif select_method == 'avg_random':
+                    selected_inds = self.select_weak_inds_avg_random(weak_supervision_inds_file, search_tree, sub_labels, percentage)
+                elif select_method == 'avg_distance':
+                    selected_inds = self.select_weak_inds_avg_distance(weak_supervision_inds_file, sub_points, search_tree, sub_labels, percentage)
                 self.weak_inds += [selected_inds]
                 
             
@@ -1090,7 +1042,198 @@ class ISPRSDataset(PointCloudDataset):
         # Get original points
         data = read_ply(file_path)
         return np.vstack((data['x'], data['y'], data['z'])).T
+    
+    def select_weak_inds_ball_random(self, weak_supervision_inds_file, sub_points, sub_labels, search_tree, ws_in_radius, percentage):
+        if exists(weak_supervision_inds_file):
+            with open(weak_supervision_inds_file, 'rb') as f:
+                selected_inds = np.load(f)
+            selected_labels = sub_labels[selected_inds]
+            selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+            for l in selected_labels:
+                selected_counts[l] += 1
+            cloud_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+            for l in sub_labels:
+                cloud_counts[l] += 1
+            print('selected_counts', selected_counts)
+            print('selected_counts / cloud_counts', selected_counts / cloud_counts)
+            print('all selected_counts:', selected_counts.sum(), 'all cloud_counts:', cloud_counts.sum())
+            print('selected_counts / cloud_counts:', selected_counts.sum() / cloud_counts.sum())
+        else:
+            points_sum = search_tree.data.shape[0]
+            print('all points', points_sum)
+            selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
+            selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+            cloud_counts = np.ones(self.config.num_classes, dtype=np.int32)
+            
+            # check if the selected points are covered all classes(every class is bigger than 0)
+            while np.any(selected_counts == 0):
+                print('not enough selected points, reselecting')
+                selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
+                while selected_inds.shape[0] < int(points_sum * percentage):
+                    # Get points in the ball
+                    center_point_ind = np.random.randint(points_sum)
+                    inds = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1),
+                                                    r=ws_in_radius)[0]
+                    selected_inds = np.concatenate((selected_inds, inds))
+                    selected_inds = np.unique(selected_inds)
+                print('selected_inds.shape', selected_inds.shape)
+                    
+                # count the number of selected points by class
+                selected_labels = sub_labels[selected_inds]
+                selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+                for l in selected_labels:
+                    selected_counts[l] += 1
+                print('selected_counts', selected_counts)
+                
+                # count the number of points in each class in the whole cloud
+                cloud_labels = sub_labels
+                cloud_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+                for l in cloud_labels:
+                    cloud_counts[l] += 1
+                print('cloud_counts', cloud_counts)
+                
+                print('selected_counts / cloud_counts')
+                print(selected_counts / cloud_counts)
+                print('all selected_counts:', selected_counts.sum(), 'all cloud_counts:', cloud_counts.sum())
+                print('selected_counts / cloud_counts:', selected_counts.sum() / cloud_counts.sum())
+            
+            # Save weak supervision indices
+            with open(weak_supervision_inds_file, 'wb') as f:
+                np.save(f, selected_inds)
+        return selected_inds
+    
+    def select_weak_inds_avg_random(self, weak_supervision_inds_file, search_tree, sub_labels, percentage):
+        if exists(weak_supervision_inds_file):
+            with open(weak_supervision_inds_file, 'rb') as f:
+                selected_inds = np.load(f)
+            selected_labels = sub_labels[selected_inds]
+            selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+            for l in selected_labels:
+                selected_counts[l] += 1
+            cloud_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+            for l in sub_labels:
+                cloud_counts[l] += 1
+            print('selected_counts', selected_counts)
+            print('selected_counts / cloud_counts', selected_counts / cloud_counts)
+            print('all selected_counts:', selected_counts.sum(), 'all cloud_counts:', cloud_counts.sum())
+            print('selected_counts / cloud_counts:', selected_counts.sum() / cloud_counts.sum())
+        else:
+            points_sum = search_tree.data.shape[0]
+            print('all points', points_sum)
+            selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
+            selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+            cloud_counts = np.ones(self.config.num_classes, dtype=np.int32)
 
+            each_class_num = int(points_sum * percentage)//self.config.num_classes
+            print('each_class_num', each_class_num)
+            each_class_inds = []
+            for i in range(self.config.num_classes):
+                each_class_inds.append(np.where(sub_labels == i)[0])
+            for i in range(self.config.num_classes):
+                inds = each_class_inds[i]
+                if len(inds) < each_class_num:
+                    selected_inds = np.concatenate((selected_inds, inds))
+                else:
+                    class_selected_inds = np.random.choice(inds, size=each_class_num, replace=False)
+                    selected_inds = np.concatenate((selected_inds, class_selected_inds))
+            
+            # count the number of selected points by class
+            for l in sub_labels[selected_inds]:
+                selected_counts[l] += 1
+            for l in sub_labels:
+                cloud_counts[l] += 1
+            print('selected_counts', selected_counts)
+            print('selected_counts / cloud_counts', selected_counts / cloud_counts)
+            print('all selected_counts:', selected_counts.sum(), 'all cloud_counts:', cloud_counts.sum())
+            print('selected_counts / cloud_counts:', selected_counts.sum() / cloud_counts.sum())
+            
+            # Save weak supervision indices
+            with open(weak_supervision_inds_file, 'wb') as f:
+                np.save(f, selected_inds)
+        return selected_inds
+    
+    def select_weak_inds_avg_distance(self, weak_supervision_inds_file, sub_points, search_tree, sub_labels, percentage):
+        if exists(weak_supervision_inds_file):
+            with open(weak_supervision_inds_file, 'rb') as f:
+                selected_inds = np.load(f)
+            selected_labels = sub_labels[selected_inds]
+            selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+            for l in selected_labels:
+                selected_counts[l] += 1
+            cloud_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+            for l in sub_labels:
+                cloud_counts[l] += 1
+            print('selected_counts', selected_counts)
+            print('selected_counts / cloud_counts', selected_counts / cloud_counts)
+            print('all selected_counts:', selected_counts.sum(), 'all cloud_counts:', cloud_counts.sum())
+            print('selected_counts / cloud_counts:', selected_counts.sum() / cloud_counts.sum())
+        else:
+            points_sum = search_tree.data.shape[0]
+            print('all points', points_sum)
+            selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
+            selected_counts = np.zeros(self.config.num_classes, dtype=np.int32)
+            cloud_counts = np.ones(self.config.num_classes, dtype=np.int32)
+
+            each_class_num = int(points_sum * percentage)//self.config.num_classes
+            print('each_class_num', each_class_num)
+            each_class_inds = []
+            for i in range(self.config.num_classes):
+                each_class_inds.append(np.where(sub_labels == i)[0])
+            longest_dist = 0
+            # find the longest distance between all points in search_tree
+            dist = 1
+            center_point_ind = np.random.choice(search_tree.data.shape[0])
+            inds_fomer = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=dist)[0]
+            dist += 5
+            while True:
+                inds = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=dist)[0]
+                if len(inds) == len(inds_fomer):
+                    break
+                else:
+                    inds_fomer = inds
+                dist += 5
+            longest_dist = dist*1.5
+            print('longest_dist', longest_dist)
+            avg_dist = longest_dist / each_class_num
+            bias = avg_dist * 0.05
+            all_neighbor_inds = np.ndarray(shape=(0,), dtype=np.int32)
+            for i in range(self.config.num_classes):
+                inds = each_class_inds[i]
+                class_selected_inds = np.ndarray(shape=(0,), dtype=np.int32)
+                if len(inds) < each_class_num:
+                    selected_inds = np.concatenate((selected_inds, inds))
+                else:
+                    center_point_ind = np.random.choice(inds)
+                    class_selected_inds = np.array([center_point_ind])
+                    while len(class_selected_inds) < each_class_num:
+                        inds_in_ball = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=avg_dist)[0]
+                        inds_inin_ball = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=avg_dist-bias)[0]
+                        inds_shell_1 = np.setdiff1d(inds_in_ball, inds_inin_ball)
+                        inds_shell = np.setdiff1d(inds_shell_1, all_neighbor_inds)
+                        inds_shell = np.setdiff1d(inds_shell, class_selected_inds)
+                        if len(inds_shell) == 0:
+                            center_point_ind = np.random.choice(np.setdiff1d(inds, all_neighbor_inds))
+                            continue
+                        center_point_ind = np.random.choice(inds_shell)
+                        class_selected_inds = np.concatenate((class_selected_inds, inds_shell))
+                        all_neighbor_inds = np.concatenate((all_neighbor_inds, inds_inin_ball))
+                    selected_inds = np.concatenate((selected_inds, class_selected_inds))
+                    # unique
+                    all_neighbor_inds = np.unique(all_neighbor_inds)
+            # count the number of selected points by class
+            for l in sub_labels[selected_inds]:
+                selected_counts[l] += 1
+            for l in sub_labels:
+                cloud_counts[l] += 1
+            print('selected_counts', selected_counts)
+            print('selected_counts / cloud_counts', selected_counts / cloud_counts)
+            print('all selected_counts:', selected_counts.sum(), 'all cloud_counts:', cloud_counts.sum())
+            print('selected_counts / cloud_counts:', selected_counts.sum() / cloud_counts.sum())
+            
+            # Save weak supervision indices
+            with open(weak_supervision_inds_file, 'wb') as f:
+                np.save(f, selected_inds)
+        return selected_inds
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
