@@ -1138,7 +1138,7 @@ class ISPRSDataset(PointCloudDataset):
                     selected_inds = np.concatenate((selected_inds, class_selected_inds))
             
             # count the number of selected points by class
-            for l in selected_inds:
+            for l in sub_labels[selected_inds]:
                 selected_counts[l] += 1
             for l in sub_labels:
                 cloud_counts[l] += 1
@@ -1215,7 +1215,7 @@ class ISPRSDataset(PointCloudDataset):
                     # unique
                     all_neighbor_inds = np.unique(all_neighbor_inds)
             # count the number of selected points by class
-            for l in selected_inds:
+            for l in sub_labels[selected_inds]:
                 selected_counts[l] += 1
             for l in sub_labels:
                 cloud_counts[l] += 1
