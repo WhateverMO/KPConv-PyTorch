@@ -1211,7 +1211,9 @@ class ISPRSDataset(PointCloudDataset):
                         inds_shell_1 = np.setdiff1d(inds_in_ball, inds_inin_ball)
                         if len(inds_shell_1) == 0:
                             center_point_ind = np.random.choice(np.setdiff1d(inds, all_neighbor_inds))
+                            continue
                         inds_shell = np.setdiff1d(inds_shell_1, all_neighbor_inds)
+                        inds_shell = np.setdiff1d(inds_shell, class_selected_inds)
                         if len(inds_shell) == 0:
                             center_point_ind = np.random.choice(inds_shell_1)
                             continue
