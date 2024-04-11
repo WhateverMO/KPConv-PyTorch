@@ -1183,7 +1183,9 @@ class ISPRSDataset(PointCloudDataset):
             # find the longest distance between all points in search_tree
             for i in range(search_tree.data.shape[0]):
                 for j in range(i+1, search_tree.data.shape[0]):
-                    dist = np.linalg.norm(search_tree.data[i] - search_tree.data[j])
+                    xi, yi, zi = search_tree.data[i]
+                    xj, yj, zj = search_tree.data[j]
+                    dist = np.sqrt((xi - xj) ** 2 + (yi - yj) ** 2 + (zi - zj) ** 2)
                     if dist > longest_dist:
                         longest_dist = dist
             print('longest_dist', longest_dist)
