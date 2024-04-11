@@ -1181,13 +1181,18 @@ class ISPRSDataset(PointCloudDataset):
                 each_class_inds.append(np.where(sub_labels == i)[0])
             longest_dist = 0
             # find the longest distance between all points in search_tree
-            for i in range(search_tree.data.shape[0]):
-                for j in range(i+1, search_tree.data.shape[0]):
-                    xi, yi, zi = search_tree.data[i]
-                    xj, yj, zj = search_tree.data[j]
-                    dist = np.sqrt((xi - xj) ** 2 + (yi - yj) ** 2 + (zi - zj) ** 2)
-                    if dist > longest_dist:
-                        longest_dist = dist
+            dist = 1
+            center_point_ind = np.random.choice(search_tree.data.shape[0])
+            inds_fomer = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=dist)[0]
+            dist += 5
+            while True:
+                inds = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=dist)[0]
+                if len(inds) == len(inds_fomer):
+                    break
+                else:
+                    inds_fomer = inds
+                dist += 5
+            longest_dist = dist*1.5
             print('longest_dist', longest_dist)
             avg_dist = longest_dist / each_class_num
             bias = avg_dist * 0.05
