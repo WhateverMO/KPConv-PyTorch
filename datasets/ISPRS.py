@@ -1209,13 +1209,15 @@ class ISPRSDataset(PointCloudDataset):
                         inds_in_ball = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=avg_dist)[0]
                         inds_inin_ball = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=avg_dist-bias)[0]
                         inds_shell_1 = np.setdiff1d(inds_in_ball, inds_inin_ball)
+                        if len(inds_shell_1) == 0:
+                            j = np.random.choice(inds)
                         inds_shell = np.setdiff1d(inds_shell_1, all_neighbor_inds)
-                        j = np.random.choice(inds_shell)
-                        center_point_ind = j
                         if len(inds_shell) == 0:
                             j = np.random.choice(inds_shell_1)
                             center_point_ind = j
                             continue
+                        j = np.random.choice(inds_shell)
+                        center_point_ind = j
                         class_selected_inds = np.concatenate((class_selected_inds, [center_point_ind]))
                         all_neighbor_inds = np.concatenate((all_neighbor_inds, inds_inin_ball))
                     selected_inds = np.concatenate((selected_inds, class_selected_inds))
