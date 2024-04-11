@@ -927,7 +927,7 @@ class ISPRSDataset(PointCloudDataset):
                 elif select_method == 'avg_random':
                     selected_inds = self.select_weak_inds_avg_random(weak_supervision_inds_file, search_tree, sub_labels, percentage)
                 elif select_method == 'avg_distance':
-                    selected_inds = self.select_weak_inds_avg_distance(weak_supervision_inds_file, search_tree, sub_labels, percentage)
+                    selected_inds = self.select_weak_inds_avg_distance(weak_supervision_inds_file, sub_points, search_tree, sub_labels, percentage)
                 self.weak_inds += [selected_inds]
                 
             
