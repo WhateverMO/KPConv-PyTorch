@@ -1205,6 +1205,7 @@ class ISPRSDataset(PointCloudDataset):
                 else:
                     center_point_ind = np.random.choice(inds)
                     class_selected_inds = np.array([center_point_ind])
+                    j = 0
                     while len(class_selected_inds) < each_class_num:
                         inds_in_ball = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=avg_dist)[0]
                         inds_inin_ball = search_tree.query_radius(sub_points[center_point_ind].reshape(1, -1), r=avg_dist-bias)[0]
@@ -1216,6 +1217,10 @@ class ISPRSDataset(PointCloudDataset):
                             continue
                         center_point_ind = np.random.choice(inds_shell)
                         inds_shell = np.intersect1d(inds_shell, each_class_inds[i])
+                        if len(inds_shell) == 0:
+                            j += 1
+                            if j > 500:
+                                inds_shell = np.random.choice(each_class_inds[i], size=each_class_num-len(class_selected_inds), replace=False)
                         class_selected_inds = np.concatenate((class_selected_inds, inds_shell))
                         all_neighbor_inds = np.concatenate((all_neighbor_inds, inds_inin_ball))
                     selected_inds = np.concatenate((selected_inds, class_selected_inds))
