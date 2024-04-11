@@ -76,3 +76,8 @@
 # # get the second word of path
 # second_word = path.split('/')[1]
 # print(second_word)
+import numpy as np
+
+a = np.array([1,2,3,4,5])
+
+print(len(a))
