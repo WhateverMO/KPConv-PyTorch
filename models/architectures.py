@@ -384,7 +384,8 @@ class KPFCNN(nn.Module):
         # only calculate the unlabeled loss
         outputs_unlabeled = outputs[labels == unlabeled_label]
         # calculate entropy loss
-        Loss_ent = self.criterion(outputs_unlabeled, outputs_unlabeled)
+        Loss_ent = -torch.sum(outputs_unlabeled * torch.log(outputs_unlabeled + 1e-6), dim=1)
+        Loss_ent = torch.mean(Loss_ent)
         return Loss_ent
         
     def loss_pl(self, outputs, outputs_pl, labels, unlabeled_label):
