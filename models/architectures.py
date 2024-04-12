@@ -381,6 +381,8 @@ class KPFCNN(nn.Module):
         :param labels: labels
         :return: loss_ent
         """
+        # normalize the outputs
+        outputs = torch.softmax(outputs, dim=1)
         # only calculate the unlabeled loss
         outputs_unlabeled = outputs[labels == unlabeled_label]
         # clamp
@@ -397,6 +399,9 @@ class KPFCNN(nn.Module):
         :param labels: labels        
         :return: loss_pl
         """
+        # normalize the inputs
+        outputs = torch.softmax(outputs, dim=1)
+        outputs_pl = torch.softmax(outputs_pl, dim=1)
         # only calculate the unlabeled loss
         outputs_unlabeled = outputs[labels == unlabeled_label]
         outputs_pl_unlabeled = outputs_pl[labels == unlabeled_label]
@@ -404,7 +409,7 @@ class KPFCNN(nn.Module):
         # clamp
         outputs_unlabeled = torch.clamp(outputs_unlabeled, min=1e-4)
         # calculate the weight use the shanon entropy
-        weight = -torch.sum(outputs_unlabeled * torch.log(outputs_unlabeled + 1e-6), dim=1)
+        weight = -torch.sum(outputs_unlabeled * torch.log(outputs_unlabeled), dim=1)
         # calculate the entropy of pseudo label and the outputs_unlabeled
         pseudo_label_onehot = torch.zeros_like(outputs_unlabeled)
         pseudo_label_onehot.scatter_(1, pseudo_label.unsqueeze(1), 1)
