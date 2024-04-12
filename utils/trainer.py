@@ -365,6 +365,7 @@ class ModelTrainer:
                 # Forward pass
                 outputs = student_net(batch, config)
                 loss_student = student_net.loss(outputs, batch.labels)
+                loss_ent = student_net.loss_ent(outputs, batch.labels, config.weak_learning_label)
                 acc = student_net.accuracy(outputs, batch.labels)
                 
                 outputs_teacher = teacher_net(batch, config)
@@ -372,21 +373,27 @@ class ModelTrainer:
                 # kl_loss for output and output_teacher
                 consistency_loss = nn.KLDivLoss(reduction='batchmean')(nn.functional.log_softmax(outputs, dim=1), nn.functional.softmax(outputs_teacher, dim=1))
                 
-                # outputs = student_net(batch, config)
+                # mse for output and output_teacher
+                loss_mse = nn.MSELoss()(outputs, outputs_teacher)
                 
-                # outputs_teacher = teacher_net(batch, config)
-                # out_teacher = torch.argmax(outputs_teacher)
-                # loss_student = student_net.loss(outputs, batch.labels)
-                # wi = ....# TODO:商最小化（正则化）方式
-                # loss_soft = student_net.loss(wi*outputs,out_teacher)
-                # acc = student_net.accuracy(outputs, batch.labels)
-                # # kl_loss for output and output_teacher TODO:MSE_LOSS
-                # consistency_loss = nn.KLDivLoss(reduction='batchmean')(nn.functional.log_softmax(outputs, dim=1), nn.functional.softmax(outputs_teacher, dim=1))
+                # loss pseudo label
+                loss_pl = student_net.loss_pl(outputs, outputs_teacher, batch.labels, config.weak_learning_label)
+                
+                T = self.step/100
+                
+                gaussian_curve = np.exp(-5*(1-T)**2)
+                
+                lamda_ent = lamda_mse = gaussian_curve
+                
+                if self.step < 100:
+                    loss = loss_student + lamda_ent*loss_ent + lamda_mse*loss_mse
+                else:
+                    loss = loss_student + loss_ent + loss_mse + loss_pl
                 
                 t += [time.time()]
 
                 # Backward + optimize
-                loss = loss_student + consistency_loss
+                # loss = loss_student + consistency_loss
                 loss.backward()
 
                 if config.grad_clip_norm > 0:

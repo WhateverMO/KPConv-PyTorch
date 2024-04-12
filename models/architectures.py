@@ -373,6 +373,38 @@ class KPFCNN(nn.Module):
 
         # Combined loss
         return self.output_loss + self.reg_loss
+    
+    def loss_ent(self, outputs, labels, unlabeled_label):
+        """
+        Runs the loss on outputs of the model
+        :param outputs: logits
+        :param labels: labels
+        :return: loss_ent
+        """
+        # only calculate the unlabeled loss
+        outputs_unlabeled = outputs[labels == unlabeled_label]
+        # calculate entropy loss
+        Loss_ent = self.criterion(outputs_unlabeled, outputs_unlabeled)
+        return Loss_ent
+        
+    def loss_pl(self, outputs, outputs_pl, labels, unlabeled_label):
+        """
+        Runs the loss on outputs of the model
+        :param outputs: logits
+        :param labels: labels        
+        :return: loss_pl
+        """
+        # only calculate the unlabeled loss
+        outputs_unlabeled = outputs[labels == unlabeled_label]
+        outputs_pl_unlabeled = outputs_pl[labels == unlabeled_label]
+        pseudo_label = torch.argmax(outputs_pl_unlabeled, dim=1)
+        # calculate the weight use the shanon entropy
+        weight = -torch.sum(outputs_unlabeled * torch.log(outputs_unlabeled + 1e-6), dim=1)
+        # calculate the entropy of pseudo label and the outputs_unlabeled
+        entropy_pl = -torch.sum(outputs_pl_unlabeled * torch.log(outputs_pl_unlabeled + 1e-6), dim=1)
+        Loss_pls = weight * entropy_pl
+        Loss_pl = torch.mean(Loss_pls)
+        return Loss_pl
 
     def accuracy(self, outputs, labels):
         """
