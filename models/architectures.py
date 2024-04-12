@@ -383,8 +383,10 @@ class KPFCNN(nn.Module):
         """
         # only calculate the unlabeled loss
         outputs_unlabeled = outputs[labels == unlabeled_label]
+        # clamp
+        outputs_unlabeled = torch.clamp(outputs_unlabeled, min=1e-4)
         # calculate entropy loss
-        Loss_ent = -torch.sum(outputs_unlabeled * torch.log(outputs_unlabeled + 1e-6), dim=1)
+        Loss_ent = -torch.sum(outputs_unlabeled * torch.log(outputs_unlabeled), dim=1)
         Loss_ent = torch.mean(Loss_ent)
         return Loss_ent
         
@@ -399,10 +401,12 @@ class KPFCNN(nn.Module):
         outputs_unlabeled = outputs[labels == unlabeled_label]
         outputs_pl_unlabeled = outputs_pl[labels == unlabeled_label]
         pseudo_label = torch.argmax(outputs_pl_unlabeled, dim=1)
+        # clamp
+        outputs_unlabeled = torch.clamp(outputs_unlabeled, min=1e-4)
         # calculate the weight use the shanon entropy
         weight = -torch.sum(outputs_unlabeled * torch.log(outputs_unlabeled + 1e-6), dim=1)
         # calculate the entropy of pseudo label and the outputs_unlabeled
-        entropy_pl = -torch.sum(outputs_pl_unlabeled * torch.log(outputs_pl_unlabeled + 1e-6), dim=1)
+        entropy_pl = -torch.sum(pseudo_label * torch.log(outputs_unlabeled + 1e-6), dim=1)
         Loss_pls = weight * entropy_pl
         Loss_pl = torch.mean(Loss_pls)
         return Loss_pl
