@@ -406,7 +406,9 @@ class KPFCNN(nn.Module):
         # calculate the weight use the shanon entropy
         weight = -torch.sum(outputs_unlabeled * torch.log(outputs_unlabeled + 1e-6), dim=1)
         # calculate the entropy of pseudo label and the outputs_unlabeled
-        entropy_pl = -torch.sum(pseudo_label * torch.log(outputs_unlabeled + 1e-6), dim=1)
+        pseudo_label_onehot = torch.zeros_like(outputs_unlabeled)
+        pseudo_label_onehot.scatter_(1, pseudo_label.unsqueeze(1), 1)
+        entropy_pl = -torch.sum(pseudo_label_onehot * torch.log(outputs_unlabeled), dim=1)
         Loss_pls = weight * entropy_pl
         Loss_pl = torch.mean(Loss_pls)
         return Loss_pl
