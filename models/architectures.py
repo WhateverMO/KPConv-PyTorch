@@ -450,6 +450,9 @@ class KPFCNN(nn.Module):
         outputs = outputs[labels != unlabeled_label]
         labels = labels[labels != unlabeled_label]
 
+        if len(labels) == 0:
+            return float('nan')
+        
         # Set all ignored labels to -1 and correct the other label to be in [0, C-1] range
         target = - torch.ones_like(labels)
         for i, c in enumerate(self.valid_labels):
