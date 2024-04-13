@@ -79,11 +79,14 @@ class ModelTrainer:
         deform_params = [v for k, v in net.named_parameters() if 'offset' in k]
         other_params = [v for k, v in net.named_parameters() if 'offset' not in k]
         deform_lr = config.learning_rate * config.deform_lr_factor
-        self.optimizer = torch.optim.SGD([{'params': other_params},
-                                          {'params': deform_params, 'lr': deform_lr}],
-                                         lr=config.learning_rate,
-                                         momentum=config.momentum,
-                                         weight_decay=config.weight_decay)
+        # self.optimizer = torch.optim.SGD([{'params': other_params},
+        #                                   {'params': deform_params, 'lr': deform_lr}],
+        #                                  lr=config.learning_rate,
+        #                                  momentum=config.momentum,
+        #                                  weight_decay=config.weight_decay)
+        self.optimizer = torch.optim.Adam([{'params': other_params}],
+                                           lr=config.learning_rate,
+                                           weight_decay=config.weight_decay)
 
         # Choose to train on CPU or GPU
         if on_gpu and torch.cuda.is_available():
@@ -366,7 +369,7 @@ class ModelTrainer:
                 outputs = student_net(batch, config)
                 loss_student = student_net.loss(outputs, batch.labels)
                 loss_ent = student_net.loss_ent(outputs, batch.labels, config.weak_learning_label)
-                acc = student_net.accuracy(outputs, batch.labels)
+                acc = student_net.accuracy_weak(outputs, batch.labels)
                 
                 outputs_teacher = teacher_net(batch, config)
                 

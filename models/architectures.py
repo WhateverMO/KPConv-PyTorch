@@ -410,6 +410,7 @@ class KPFCNN(nn.Module):
         outputs_unlabeled = torch.clamp(outputs_unlabeled, min=1e-4)
         # calculate the weight use the shanon entropy
         weight = -torch.sum(outputs_unlabeled * torch.log(outputs_unlabeled), dim=1)
+        weight = 1 - weight/np.log(self.C)
         # calculate the entropy of pseudo label and the outputs_unlabeled
         pseudo_label_onehot = torch.zeros_like(outputs_unlabeled)
         pseudo_label_onehot.scatter_(1, pseudo_label.unsqueeze(1), 1)
@@ -436,6 +437,31 @@ class KPFCNN(nn.Module):
         correct = (predicted == target).sum().item()
 
         return correct / total
+    
+    def accuracy_weak(self, outputs, labels, unlabeled_label):
+        """
+        Computes accuracy of the current batch
+        :param outputs: logits predicted by the network
+        :param labels: labels
+        :return: accuracy value
+        """
+
+        # only calculate the labeled points
+        outputs = outputs[labels != unlabeled_label]
+        labels = labels[labels != unlabeled_label]
+
+        # Set all ignored labels to -1 and correct the other label to be in [0, C-1] range
+        target = - torch.ones_like(labels)
+        for i, c in enumerate(self.valid_labels):
+            target[labels == c] = i
+
+        predicted = torch.argmax(outputs.data, dim=1)
+        total = target.size(0)
+        correct = (predicted == target).sum().item()
+        
+        return correct / total
+
+        
 
 
 
