@@ -369,7 +369,7 @@ class ModelTrainer:
                 outputs = student_net(batch, config)
                 loss_student = student_net.loss(outputs, batch.labels)
                 loss_ent = student_net.loss_ent(outputs, batch.labels, config.weak_learning_label)
-                acc = student_net.accuracy_weak(outputs, batch.labels)
+                acc = student_net.accuracy_weak(outputs, batch.labels, config.weak_learning_label)
                 
                 outputs_teacher = teacher_net(batch, config)
                 
