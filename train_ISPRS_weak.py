@@ -58,12 +58,13 @@ class ISPRSConfig(Config):
     weak_supervision = True
     
     weak_learning_label = 10
-    weak_supervision_perc = 0.01
+    weak_supervision_perc = 0.001
     # method = ['avg_random', 'avg_distance', 'ball_random', 'f']
     # weak_select_method = 'ball_random'
     # weak_supervision_in_radius = 1
     
-    weak_select_method = 'avg_random'
+    # weak_select_method = 'avg_random'
+    weak_select_method = 'avg_distance'
     weak_supervision_in_radius = 0 # althouth it is not used in this method, we still need to set it to 0
     ema_keep_rate = 0.955
 
