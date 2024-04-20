@@ -57,7 +57,7 @@ class ISPRSConfig(Config):
     weak_supervision = True
     
     weak_learning_label = 10
-    weak_supervision_perc = 0.001
+    weak_supervision_perc = 0.00102
     # method = ['avg_random', 'avg_distance', 'ball_random', 'f']
     # weak_select_method = 'ball_random'
     # weak_supervision_in_radius = 1
@@ -182,7 +182,7 @@ class ISPRSConfig(Config):
     #####################
 
     # Maximal number of epochs
-    max_epoch = 50
+    max_epoch = 20
     max_epoch_stage2 = 500
 
     # Learning rate management
