@@ -298,7 +298,7 @@ class ModelTrainer:
         print('Finished Training')
         return
     
-    def train_weakly(self, student_net, teacher_net, training_loader, val_loader, config, training_loader_stage2=None, config_stage2=None):
+    def train_weakly(self, student_net, teacher_net, training_loader, val_loader, config):
         """
         Train weakly the model on a particular dataset.
         """
@@ -338,16 +338,13 @@ class ModelTrainer:
         mean_dt = np.zeros(1)
 
         # Start training loop
-        for epoch in range(config.max_epoch + config.max_epoch_stage2):
+        for epoch in range(config.max_epoch):
 
             # Remove File for kill signal
             if epoch == config.max_epoch - 1 and exists(PID_file):
                 remove(PID_file)
 
             self.step = 0
-            if epoch >= config.max_epoch:
-                training_loader = training_loader_stage2
-                config = config_stage2
             for batch in training_loader:
 
                 # Check kill signal (running_PID.txt deleted)
