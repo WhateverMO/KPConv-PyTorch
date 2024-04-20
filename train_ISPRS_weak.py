@@ -371,7 +371,7 @@ def train_ISPRS_weak_main(queue):
 
     # Training
     if config.weak_supervision:
-        trainer.train_weakly(net, net_teacher, training_loader, test_loader, config, training_loader_stage2)
+        trainer.train_weakly(net, net_teacher, training_loader, test_loader, config, training_loader_stage2, config_stage2)
     else:
         trainer.train(net, training_loader, test_loader, config)
     
