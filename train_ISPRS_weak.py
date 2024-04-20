@@ -293,12 +293,15 @@ def train_ISPRS_weak_main(queue):
         config.saving_path = sys.argv[1]
     config_test = copy.deepcopy(config)
     config_test.weak_supervision = False
+    
+    config_test_stage2 = copy.deepcopy(config_stage2)
+    config_test_stage2.weak_supervision = False
 
     # Initialize datasets
     training_dataset = ISPRSDataset(config, set='training', use_potentials=True)
     training_dataset_stage2 = ISPRSDataset(config_stage2, set='training', use_potentials=True)
     test_dataset = ISPRSDataset(config_test, set='validation', use_potentials=True)
-    test_dataset_stage2 = ISPRSDataset(config_test, set='validation', use_potentials=True)
+    test_dataset_stage2 = ISPRSDataset(config_test_stage2, set='validation', use_potentials=True)
 
     # Initialize samplers
     training_sampler = ISPRSSampler(training_dataset)
@@ -328,7 +331,7 @@ def train_ISPRS_weak_main(queue):
                              pin_memory=True)
     test_loader_stage2 = DataLoader(test_dataset_stage2,
                              batch_size=1,
-                             sampler=test_sampler,
+                             sampler=test_sampler_stage2,
                              collate_fn=ISPRSCollate,
                              num_workers=config.input_threads,
                              pin_memory=True)
