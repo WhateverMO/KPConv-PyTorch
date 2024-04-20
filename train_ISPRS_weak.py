@@ -182,7 +182,8 @@ class ISPRSConfig(Config):
     #####################
 
     # Maximal number of epochs
-    max_epoch = 500
+    max_epoch = 50
+    max_epoch_stage2 = 500
 
     # Learning rate management
     learning_rate = 1e-2
@@ -195,6 +196,7 @@ class ISPRSConfig(Config):
 
     # Number of steps per epochs
     epoch_steps = 500
+    epoch_steps_stage2 = 200
 
     # Number of validation examples per epoch
     validation_size = 50
@@ -276,9 +278,14 @@ def train_ISPRS_weak_main(queue):
 
     # Initialize configuration class
     config = ISPRSConfig()
+    config_stage2 = ISPRSConfig()
+    config_stage2.epoch_steps = config.epoch_steps_stage2
     if previous_training_path:
         config.load(os.path.join('results', previous_training_path))
         config.saving_path = None
+    if previous_training_path and config.weak_supervision:
+        config_stage2.load(os.path.join('results', previous_training_path))
+        config_stage2.saving_path = None
 
     # Get path from argument if given
     if len(sys.argv) > 1:
@@ -288,15 +295,23 @@ def train_ISPRS_weak_main(queue):
 
     # Initialize datasets
     training_dataset = ISPRSDataset(config, set='training', use_potentials=True)
+    training_dataset_stage2 = ISPRSDataset(config_stage2, set='training', use_potentials=True)
     test_dataset = ISPRSDataset(config_test, set='validation', use_potentials=True)
 
     # Initialize samplers
     training_sampler = ISPRSSampler(training_dataset)
+    training_sampler_stage2 = ISPRSSampler(training_dataset_stage2)
     test_sampler = ISPRSSampler(test_dataset)
 
 
     # Initialize the dataloader
     training_loader = DataLoader(training_dataset,
+                                 batch_size=1,
+                                 sampler=training_sampler,
+                                 collate_fn=ISPRSCollateWeak,
+                                 num_workers=config.input_threads,
+                                 pin_memory=True)
+    training_loader_stage2 = DataLoader(training_dataset_stage2,
                                  batch_size=1,
                                  sampler=training_sampler,
                                  collate_fn=ISPRSCollateWeak,
@@ -311,6 +326,7 @@ def train_ISPRS_weak_main(queue):
 
     # Calibrate samplers
     training_sampler.calibration(training_loader, verbose=True)
+    training_sampler_stage2.calibration(training_loader_stage2, verbose=True)
     test_sampler.calibration(test_loader, verbose=True)
 
     # Optional debug functions
