@@ -58,7 +58,7 @@ class ISPRSConfig(Config):
     weak_supervision = True
     
     weak_learning_label = 10
-    weak_supervision_perc = 0.001
+    weak_supervision_perc = 0.00102
     # method = ['avg_random', 'avg_distance', 'ball_random', 'f']
     # weak_select_method = 'ball_random'
     # weak_supervision_in_radius = 1
@@ -183,7 +183,8 @@ class ISPRSConfig(Config):
     #####################
 
     # Maximal number of epochs
-    max_epoch = 500
+    max_epoch = 20
+    max_epoch_stage2 = 500
 
     # Learning rate management
     learning_rate = 1e-2
@@ -196,6 +197,7 @@ class ISPRSConfig(Config):
 
     # Number of steps per epochs
     epoch_steps = 500
+    epoch_steps_stage2 = 200
 
     # Number of validation examples per epoch
     validation_size = 50
@@ -281,23 +283,36 @@ def train_ISPRS_weak_main(queue):
 
     # Initialize configuration class
     config = ISPRSConfig()
+    config_stage2 = ISPRSConfig()
+    config_stage2.epoch_steps = config.epoch_steps_stage2
+    config_stage2.max_epoch = config.max_epoch_stage2
     if previous_training_path:
         config.load(os.path.join('results', previous_training_path))
         config.saving_path = None
+    if previous_training_path and config.weak_supervision:
+        config_stage2.load(os.path.join('results', previous_training_path))
+        config_stage2.saving_path = None
 
     # Get path from argument if given
     if len(sys.argv) > 1:
         config.saving_path = sys.argv[1]
     config_test = copy.deepcopy(config)
     config_test.weak_supervision = False
+    
+    config_test_stage2 = copy.deepcopy(config_stage2)
+    config_test_stage2.weak_supervision = False
 
     # Initialize datasets
     training_dataset = ISPRSDataset(config, set='training', use_potentials=True)
+    training_dataset_stage2 = ISPRSDataset(config_stage2, set='training', use_potentials=True)
     test_dataset = ISPRSDataset(config_test, set='validation', use_potentials=True)
+    test_dataset_stage2 = ISPRSDataset(config_test_stage2, set='validation', use_potentials=True)
 
     # Initialize samplers
     training_sampler = ISPRSSampler(training_dataset)
+    training_sampler_stage2 = ISPRSSampler(training_dataset_stage2)
     test_sampler = ISPRSSampler(test_dataset)
+    test_sampler_stage2 = ISPRSSampler(test_dataset_stage2)
 
 
     # Initialize the dataloader
@@ -307,16 +322,30 @@ def train_ISPRS_weak_main(queue):
                                  collate_fn=ISPRSCollateWeak,
                                  num_workers=config.input_threads,
                                  pin_memory=True)
+    training_loader_stage2 = DataLoader(training_dataset_stage2,
+                                 batch_size=1,
+                                 sampler=training_sampler_stage2,
+                                 collate_fn=ISPRSCollateWeak,
+                                 num_workers=config.input_threads,
+                                 pin_memory=True)
     test_loader = DataLoader(test_dataset,
                              batch_size=1,
                              sampler=test_sampler,
                              collate_fn=ISPRSCollate,
                              num_workers=config.input_threads,
                              pin_memory=True)
+    test_loader_stage2 = DataLoader(test_dataset_stage2,
+                             batch_size=1,
+                             sampler=test_sampler_stage2,
+                             collate_fn=ISPRSCollate,
+                             num_workers=config.input_threads,
+                             pin_memory=True)
 
     # Calibrate samplers
     training_sampler.calibration(training_loader, verbose=True)
+    training_sampler_stage2.calibration(training_loader_stage2, verbose=True)
     test_sampler.calibration(test_loader, verbose=True)
+    test_sampler_stage2.calibration(test_loader_stage2, verbose=True)
 
     # Optional debug functions
     # debug_timing(training_dataset, training_loader)
@@ -348,6 +377,7 @@ def train_ISPRS_weak_main(queue):
     # Define a trainer class
     if config.weak_supervision:
         trainer = ModelTrainer(net, config, chkp_path=chosen_chkp, net_teacher=net_teacher)
+        trainer_stage2 = ModelTrainer(net, config_stage2, chkp_path=chosen_chkp, net_teacher=net_teacher)
     else:
         trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
     print('Done in {:.1f}s\n'.format(time.time() - t1))
@@ -360,6 +390,9 @@ def train_ISPRS_weak_main(queue):
     # Training
     if config.weak_supervision:
         trainer.train_weakly(net, net_teacher, training_loader, test_loader, config)
+        print('\nStart training stage 2')
+        print('*'*20)
+        trainer_stage2.train_weakly(net, net_teacher, training_loader_stage2, test_loader_stage2, config_stage2)
     else:
         trainer.train(net, training_loader, test_loader, config)
     
