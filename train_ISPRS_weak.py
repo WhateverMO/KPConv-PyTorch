@@ -138,7 +138,7 @@ class ISPRSConfig(Config):
 
     # Radius of the input sphere (decrease value to reduce memory cost)
     # in_radius = 1.2
-    in_radius = 25
+    in_radius = 30
 
     # Size of the first subsampling grid in meter (increase value to reduce memory cost)
     # first_subsampling_dl = 0.03
