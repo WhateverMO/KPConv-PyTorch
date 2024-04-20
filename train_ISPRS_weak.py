@@ -319,7 +319,7 @@ def train_ISPRS_weak_main(queue):
                                  pin_memory=True)
     training_loader_stage2 = DataLoader(training_dataset_stage2,
                                  batch_size=1,
-                                 sampler=training_sampler,
+                                 sampler=training_sampler_stage2,
                                  collate_fn=ISPRSCollateWeak,
                                  num_workers=config.input_threads,
                                  pin_memory=True)
