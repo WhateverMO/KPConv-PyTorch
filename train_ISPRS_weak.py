@@ -304,15 +304,11 @@ def train_ISPRS_weak_main(queue):
 
     # Initialize datasets
     training_dataset = ISPRSDataset(config, set='training', use_potentials=True)
-    training_dataset_stage2 = ISPRSDataset(config_stage2, set='training', use_potentials=True)
     test_dataset = ISPRSDataset(config_test, set='validation', use_potentials=True)
-    test_dataset_stage2 = ISPRSDataset(config_test_stage2, set='validation', use_potentials=True)
 
     # Initialize samplers
     training_sampler = ISPRSSampler(training_dataset)
-    training_sampler_stage2 = ISPRSSampler(training_dataset_stage2)
     test_sampler = ISPRSSampler(test_dataset)
-    test_sampler_stage2 = ISPRSSampler(test_dataset_stage2)
 
 
     # Initialize the dataloader
@@ -322,30 +318,16 @@ def train_ISPRS_weak_main(queue):
                                  collate_fn=ISPRSCollateWeak,
                                  num_workers=config.input_threads,
                                  pin_memory=True)
-    training_loader_stage2 = DataLoader(training_dataset_stage2,
-                                 batch_size=1,
-                                 sampler=training_sampler_stage2,
-                                 collate_fn=ISPRSCollateWeak,
-                                 num_workers=config.input_threads,
-                                 pin_memory=True)
     test_loader = DataLoader(test_dataset,
                              batch_size=1,
                              sampler=test_sampler,
                              collate_fn=ISPRSCollate,
                              num_workers=config.input_threads,
                              pin_memory=True)
-    test_loader_stage2 = DataLoader(test_dataset_stage2,
-                             batch_size=1,
-                             sampler=test_sampler_stage2,
-                             collate_fn=ISPRSCollate,
-                             num_workers=config.input_threads,
-                             pin_memory=True)
 
     # Calibrate samplers
     training_sampler.calibration(training_loader, verbose=True)
-    training_sampler_stage2.calibration(training_loader_stage2, verbose=True)
     test_sampler.calibration(test_loader, verbose=True)
-    test_sampler_stage2.calibration(test_loader_stage2, verbose=True)
 
     # Optional debug functions
     # debug_timing(training_dataset, training_loader)
@@ -391,6 +373,24 @@ def train_ISPRS_weak_main(queue):
     if config.weak_supervision:
         trainer.train_weakly(net, net_teacher, training_loader, test_loader, config)
         if config.epoch_steps_stage2 != 0:
+            training_dataset_stage2 = ISPRSDataset(config_stage2, set='training', use_potentials=True)
+            test_dataset_stage2 = ISPRSDataset(config_test_stage2, set='validation', use_potentials=True)
+            training_sampler_stage2 = ISPRSSampler(training_dataset_stage2)
+            test_sampler_stage2 = ISPRSSampler(test_dataset_stage2)
+            training_loader_stage2 = DataLoader(training_dataset_stage2,
+                                        batch_size=1,
+                                        sampler=training_sampler_stage2,
+                                        collate_fn=ISPRSCollateWeak,
+                                        num_workers=config.input_threads,
+                                        pin_memory=True)
+            test_loader_stage2 = DataLoader(test_dataset_stage2,
+                                    batch_size=1,
+                                    sampler=test_sampler_stage2,
+                                    collate_fn=ISPRSCollate,
+                                    num_workers=config.input_threads,
+                                    pin_memory=True)
+            training_sampler_stage2.calibration(training_loader_stage2, verbose=True)
+            test_sampler_stage2.calibration(test_loader_stage2, verbose=True)
             print('\nStart training stage 2')
             print('*'*20)
             trainer_stage2.epoch = trainer.epoch
