@@ -183,8 +183,8 @@ class ISPRSConfig(Config):
     #####################
 
     # Maximal number of epochs
-    max_epoch = 20
-    max_epoch_stage2 = 500
+    max_epoch = 500
+    max_epoch_stage2 = 0
 
     # Learning rate management
     learning_rate = 1e-2
@@ -196,8 +196,8 @@ class ISPRSConfig(Config):
     batch_num = 4
 
     # Number of steps per epochs
-    epoch_steps = 500
-    epoch_steps_stage2 = 200
+    epoch_steps = 300
+    epoch_steps_stage2 = 0
 
     # Number of validation examples per epoch
     validation_size = 50
@@ -359,7 +359,6 @@ def train_ISPRS_weak_main(queue):
     # Define a trainer class
     if config.weak_supervision:
         trainer = ModelTrainer(net, config, chkp_path=chosen_chkp, net_teacher=net_teacher)
-        trainer_stage2 = ModelTrainer(net, config_stage2, chkp_path=chosen_chkp, net_teacher=net_teacher)
     else:
         trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
     print('Done in {:.1f}s\n'.format(time.time() - t1))
@@ -373,6 +372,8 @@ def train_ISPRS_weak_main(queue):
     if config.weak_supervision:
         trainer.train_weakly(net, net_teacher, training_loader, test_loader, config)
         if config.epoch_steps_stage2 != 0:
+            print('\nStart training stage 2')
+            print('*'*20)
             training_dataset_stage2 = ISPRSDataset(config_stage2, set='training', use_potentials=True)
             test_dataset_stage2 = ISPRSDataset(config_test_stage2, set='validation', use_potentials=True)
             training_sampler_stage2 = ISPRSSampler(training_dataset_stage2)
@@ -391,8 +392,11 @@ def train_ISPRS_weak_main(queue):
                                     pin_memory=True)
             training_sampler_stage2.calibration(training_loader_stage2, verbose=True)
             test_sampler_stage2.calibration(test_loader_stage2, verbose=True)
-            print('\nStart training stage 2')
-            print('*'*20)
+            if config.weak_supervision:
+                trainer = ModelTrainer(net, config, chkp_path=chosen_chkp, net_teacher=net_teacher)
+                trainer_stage2 = ModelTrainer(net, config_stage2, chkp_path=chosen_chkp, net_teacher=net_teacher)
+            else:
+                trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
             trainer_stage2.epoch = trainer.epoch
             trainer_stage2.train_weakly(net, net_teacher, training_loader_stage2, test_loader_stage2, config_stage2)
     else:
