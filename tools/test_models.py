@@ -34,6 +34,7 @@ from datasets.S3DIS import *
 from datasets.SemanticKitti import *
 from datasets.Toronto3D import *
 from datasets.ISPRS import *
+from datasets.LASDU import *
 from torch.utils.data import DataLoader
 
 from utils.config import Config
@@ -179,6 +180,10 @@ def test_models(chosen_log=None):
         test_dataset = ISPRSDataset(config, set='validation', use_potentials=True)
         test_sampler = ISPRSSampler(test_dataset)
         collate_fn = ISPRSCollate
+    elif config.dataset == 'LASDU':
+        test_dataset = LASDUDataset(config, set='validation', use_potentials=True)
+        test_sampler = LASDUSampler(test_dataset)
+        collate_fn = LASDUCollate
     elif config.dataset == 'Toronto3D':
         test_dataset = Toronto3DDataset(config, set='test', use_potentials=True)
         test_sampler = Toronto3DSampler(test_dataset)

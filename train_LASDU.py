@@ -7,7 +7,7 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 #
-#      Callable script to start a training on ISPRS dataset
+#      Callable script to start a training on LASDU dataset
 #
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -24,16 +24,14 @@
 # Common libs
 import signal
 import os
-import copy
 
 # Dataset
-from datasets.ISPRS import *
+from datasets.LASDU import *
 from torch.utils.data import DataLoader
 
 from utils.config import Config
 from utils.trainer import ModelTrainer
 from models.architectures import KPFCNN
-from tools.logger import create_logger
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -42,7 +40,7 @@ from tools.logger import create_logger
 #       \******************/
 #
 
-class ISPRSConfig(Config):
+class LASDUConfig(Config):
     """
     Override the parameters you want to modify for this dataset
     """
@@ -52,21 +50,7 @@ class ISPRSConfig(Config):
     ####################
 
     # Dataset name
-    dataset = 'ISPRS'
-    
-    # weak supervision
-    weak_supervision = True
-    
-    weak_learning_label = 10
-    weak_supervision_perc = 0.00106
-    # method = ['avg_random', 'avg_distance', 'ball_random', 'f']
-    # weak_select_method = 'ball_random'
-    # weak_supervision_in_radius = 1
-    
-    # weak_select_method = 'avg_random'
-    weak_select_method = 'avg_distance'
-    weak_supervision_in_radius = 0 # althouth it is not used in this method, we still need to set it to 0
-    ema_keep_rate = 0.955
+    dataset = 'LASDU'
 
     # Number of classes in the dataset (This value is overwritten by dataset class when Initializating dataset).
     num_classes = None
@@ -138,7 +122,7 @@ class ISPRSConfig(Config):
 
     # Radius of the input sphere (decrease value to reduce memory cost)
     # in_radius = 1.2
-    in_radius = 30
+    in_radius = 28
 
     # Size of the first subsampling grid in meter (increase value to reduce memory cost)
     # first_subsampling_dl = 0.03
@@ -184,7 +168,6 @@ class ISPRSConfig(Config):
 
     # Maximal number of epochs
     max_epoch = 500
-    max_epoch_stage2 = 0
 
     # Learning rate management
     learning_rate = 1e-2
@@ -196,8 +179,7 @@ class ISPRSConfig(Config):
     batch_num = 4
 
     # Number of steps per epochs
-    epoch_steps = 300
-    epoch_steps_stage2 = 0
+    epoch_steps = 500
 
     # Number of validation examples per epoch
     validation_size = 50
@@ -231,15 +213,11 @@ class ISPRSConfig(Config):
 #       \***************/
 #
 
-def train_ISPRS_weak_main(queue):
+if __name__ == '__main__':
 
     ############################
     # Initialize the environment
     ############################
-    
-    logger = create_logger()
-    
-    sys.stdout = logger
 
     # Set which gpu is going to be used
     GPU_ID = '0'
@@ -282,46 +260,34 @@ def train_ISPRS_weak_main(queue):
     print('****************')
 
     # Initialize configuration class
-    config = ISPRSConfig()
-    config_stage2 = ISPRSConfig()
-    config_stage2.epoch_steps = config.epoch_steps_stage2
-    config_stage2.max_epoch = config.max_epoch_stage2
+    config = LASDUConfig()
     if previous_training_path:
         config.load(os.path.join('results', previous_training_path))
         config.saving_path = None
-    if previous_training_path and config.weak_supervision:
-        config_stage2.load(os.path.join('results', previous_training_path))
-        config_stage2.saving_path = None
 
     # Get path from argument if given
     if len(sys.argv) > 1:
         config.saving_path = sys.argv[1]
-    config_test = copy.deepcopy(config)
-    config_test.weak_supervision = False
-    
-    config_test_stage2 = copy.deepcopy(config_stage2)
-    config_test_stage2.weak_supervision = False
 
     # Initialize datasets
-    training_dataset = ISPRSDataset(config, set='training', use_potentials=True)
-    test_dataset = ISPRSDataset(config_test, set='validation', use_potentials=True)
+    training_dataset = LASDUDataset(config, set='training', use_potentials=True)
+    test_dataset = LASDUDataset(config, set='validation', use_potentials=True)
 
     # Initialize samplers
-    training_sampler = ISPRSSampler(training_dataset)
-    test_sampler = ISPRSSampler(test_dataset)
-
+    training_sampler = LASDUSampler(training_dataset)
+    test_sampler = LASDUSampler(test_dataset)
 
     # Initialize the dataloader
     training_loader = DataLoader(training_dataset,
                                  batch_size=1,
                                  sampler=training_sampler,
-                                 collate_fn=ISPRSCollateWeak,
+                                 collate_fn=LASDUCollate,
                                  num_workers=config.input_threads,
                                  pin_memory=True)
     test_loader = DataLoader(test_dataset,
                              batch_size=1,
                              sampler=test_sampler,
-                             collate_fn=ISPRSCollate,
+                             collate_fn=LASDUCollate,
                              num_workers=config.input_threads,
                              pin_memory=True)
 
@@ -341,9 +307,6 @@ def train_ISPRS_weak_main(queue):
     t1 = time.time()
     net = KPFCNN(config, training_dataset.label_values, training_dataset.ignored_labels)
 
-    if config.weak_supervision:
-        net_teacher = KPFCNN(config, training_dataset.label_values, training_dataset.ignored_labels)
-    
     debug = False
     if debug:
         print('\n*************************************\n')
@@ -357,70 +320,14 @@ def train_ISPRS_weak_main(queue):
         print('\n*************************************\n')
 
     # Define a trainer class
-    if config.weak_supervision:
-        trainer = ModelTrainer(net, config, chkp_path=chosen_chkp, net_teacher=net_teacher)
-    else:
-        trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
+    trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
     print('Done in {:.1f}s\n'.format(time.time() - t1))
-
-    logger.redirect(os.path.join(config.saving_path, 'log.txt'))
 
     print('\nStart training')
     print('**************')
 
     # Training
-    if config.weak_supervision:
-        trainer.train_weakly(net, net_teacher, training_loader, test_loader, config)
-        if config.epoch_steps_stage2 != 0:
-            print('\nStart training stage 2')
-            print('*'*20)
-            training_dataset_stage2 = ISPRSDataset(config_stage2, set='training', use_potentials=True)
-            test_dataset_stage2 = ISPRSDataset(config_test_stage2, set='validation', use_potentials=True)
-            training_sampler_stage2 = ISPRSSampler(training_dataset_stage2)
-            test_sampler_stage2 = ISPRSSampler(test_dataset_stage2)
-            training_loader_stage2 = DataLoader(training_dataset_stage2,
-                                        batch_size=1,
-                                        sampler=training_sampler_stage2,
-                                        collate_fn=ISPRSCollateWeak,
-                                        num_workers=config.input_threads,
-                                        pin_memory=True)
-            test_loader_stage2 = DataLoader(test_dataset_stage2,
-                                    batch_size=1,
-                                    sampler=test_sampler_stage2,
-                                    collate_fn=ISPRSCollate,
-                                    num_workers=config.input_threads,
-                                    pin_memory=True)
-            training_sampler_stage2.calibration(training_loader_stage2, verbose=True)
-            test_sampler_stage2.calibration(test_loader_stage2, verbose=True)
-            if config.weak_supervision:
-                trainer = ModelTrainer(net, config, chkp_path=chosen_chkp, net_teacher=net_teacher)
-                trainer_stage2 = ModelTrainer(net, config_stage2, chkp_path=chosen_chkp, net_teacher=net_teacher)
-            else:
-                trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
-            trainer_stage2.epoch = trainer.epoch
-            trainer_stage2.train_weakly(net, net_teacher, training_loader_stage2, test_loader_stage2, config_stage2)
-    else:
-        trainer.train(net, training_loader, test_loader, config)
-    
-    res = (test_dataset.path, config)  
-    queue.put(res)
-    
+    trainer.train(net, training_loader, test_loader, config)
+
     print('Forcing exit now')
     os.kill(os.getpid(), signal.SIGINT)
-
-
-def train_ISPRS_weak():
-    print('Starting training ISPRS weakly supervised')
-    from multiprocessing import Queue, Process
-    queue = Queue()
-    p = Process(target=train_ISPRS_weak_main, args=(queue,))
-    p.start()
-    res = queue.get()
-    queue.close()
-    p.join()
-    print('Training done')
-    print()
-    return res
-
-if __name__ == '__main__':
-    print(train_ISPRS_weak())
