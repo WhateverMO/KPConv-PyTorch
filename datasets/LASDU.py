@@ -813,7 +813,7 @@ class LASDUDataset(PointCloudDataset):
                 data = read_ply(ply_file)
                 
                 points = np.vstack((data['x'], data['y'], data['z'])).T
-                features = np.vstack((data['number_of_return'], data['return_number'], data['intensity'])).T
+                features = np.vstack((data['num_of_return'], data['return_num'], data['intensity'])).T
                 labels = data['label']
                 
                 # Convert to numpy
