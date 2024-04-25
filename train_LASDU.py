@@ -329,6 +329,8 @@ def train_LASDU_main(queue):
     trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
     print('Done in {:.1f}s\n'.format(time.time() - t1))
 
+    logger.redirect(os.path.join(config.saving_path, 'log.txt'))
+
     print('\nStart training')
     print('**************')
 
