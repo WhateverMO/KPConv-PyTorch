@@ -160,7 +160,7 @@ class LASDUDataset(PointCloudDataset):
 
         if self.set == 'training':
             self.cloud_names = [f for i, f in enumerate(self.cloud_names)
-                                if self.all_splits[i] in self.validation_split]
+                                if self.all_splits[i] not in self.validation_split]
         elif self.set in ['validation', 'test', 'ERF']:
             self.cloud_names = [f for i, f in enumerate(self.cloud_names)
                                 if self.all_splits[i] in self.validation_split]
