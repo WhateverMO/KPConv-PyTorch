@@ -15,10 +15,21 @@ if __name__ == '__main__':
     dataset_original_path = join(dataset_path,'original_ply')
     redirect_stdout(join(log_path,'log_auto.txt'))
     plot_convergence(log_name)
-    plot_conf_mat(join(log_path,'val_preds_'+max_epoch,'conf.txt'))
+    attack_types = ['Powerline', 'Low vegetation', 'surface', 'Car', 'Fence', 'Roof', 'Facade', 'shurb', 'Tree',]
+    plot_conf_mat(join(log_path,'val_preds_'+max_epoch,'conf.txt'),attack_types)
     label_to_color(dataset_original_path,join(log_path,'val_preds_'+max_epoch))
     # plot_convergence(log_name)
     # plot_conf_mat(join(log_path,'teacher_val_preds_'+max_epoch,'conf.txt'))
     label_to_color(dataset_original_path,join(log_path,'teacher_val_preds_'+max_epoch))
     test_models(log_path)
-    test_accuracy(join('test',log_name,'predictions'),dataset_original_path)
+    label_to_names= {0: 'powerline',
+                            1: 'low vegetation',
+                            2: 'impervious surfaces',
+                            3: 'car',
+                            4: 'fence/hedge',
+                            5: 'roof',
+                            6: 'facade',
+                            7: 'shurb',
+                            8: 'tree'
+                                }
+    test_accuracy(join('test',log_name,'predictions'),dataset_original_path,label_to_names)
