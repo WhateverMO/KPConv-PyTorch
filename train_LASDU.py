@@ -24,6 +24,7 @@
 # Common libs
 import signal
 import os
+import copy
 
 # Dataset
 from datasets.LASDU import *
@@ -32,6 +33,7 @@ from torch.utils.data import DataLoader
 from utils.config import Config
 from utils.trainer import ModelTrainer
 from models.architectures import KPFCNN
+from tools.logger import create_logger
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -213,11 +215,15 @@ class LASDUConfig(Config):
 #       \***************/
 #
 
-if __name__ == '__main__':
+def train_LASDU_main(queue):
 
     ############################
     # Initialize the environment
     ############################
+
+    logger = create_logger()
+    
+    sys.stdout = logger
 
     # Set which gpu is going to be used
     GPU_ID = '0'
@@ -329,5 +335,24 @@ if __name__ == '__main__':
     # Training
     trainer.train(net, training_loader, test_loader, config)
 
+    res = (test_dataset.path, config)  
+    queue.put(res)
+
     print('Forcing exit now')
     os.kill(os.getpid(), signal.SIGINT)
+
+def train_LASDU():
+    print('Starting training LASDU weakly supervised')
+    from multiprocessing import Queue, Process
+    queue = Queue()
+    p = Process(target=train_LASDU_main, args=(queue,))
+    p.start()
+    res = queue.get()
+    queue.close()
+    p.join()
+    print('Training done')
+    print()
+    return res
+
+if __name__ == '__main__':
+    print(train_LASDU())
