@@ -85,7 +85,7 @@ class LASDUDataset(PointCloudDataset):
                                2: 'Trees',
                                3: 'Low vegetation',
                                4: 'Artifacts',
-                               5: 'Unclassified',
+                            #    5: 'Unclassified',
                                }
 
         # Initialize a bunch of variables concerning class labels
