@@ -457,12 +457,11 @@ class ModelTrainer:
                 # Log file
                 if config.saving:
                     with open(join(config.saving_path, 'training.txt'), "a") as file:
-                        message = '{:d} {:d} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}\n'
+                        message = '{:d} {:d} {:.3f} {:.3f} {:.3f} {:.3f}\n'
                         file.write(message.format(self.epoch,
                                                   self.step,
                                                   student_net.output_loss,
                                                   student_net.reg_loss,
-                                                  consistency_loss,
                                                   acc,
                                                   t[-1] - t0))
 
