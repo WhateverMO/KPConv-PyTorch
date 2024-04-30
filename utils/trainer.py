@@ -373,26 +373,39 @@ class ModelTrainer:
                 
                 outputs_teacher = teacher_net(batch, config)
                 
-                # kl_loss for output and output_teacher
-                consistency_loss = nn.KLDivLoss(reduction='batchmean')(nn.functional.log_softmax(outputs, dim=1), nn.functional.softmax(outputs_teacher, dim=1))
+                if config.MT or config.ALL:
+                    # kl_loss for output and output_teacher
+                    consistency_loss = nn.KLDivLoss(reduction='batchmean')(nn.functional.log_softmax(outputs, dim=1), nn.functional.softmax(outputs_teacher, dim=1))
                 
-                # mse for output and output_teacher
-                loss_mse = nn.MSELoss()(outputs, outputs_teacher)
-                
-                # loss pseudo label
-                loss_pl = student_net.loss_pl(outputs, outputs_teacher, batch.labels, config.weak_learning_label)
-                
-                T = self.step/100
-                
-                gaussian_curve = np.exp(-5*(1-T)**2)
-                
-                lamda_ent = lamda_mse = gaussian_curve
-                
-                if self.step < 100:
-                    loss = loss_student + lamda_ent*loss_ent + lamda_mse*loss_mse
+                    # mse for output and output_teacher
+                    loss_mse = nn.MSELoss()(outputs, outputs_teacher)
+                    
+                    # loss pseudo label
+                    loss_pl = student_net.loss_pl(outputs, outputs_teacher, batch.labels, config.weak_learning_label)
+                    
+                    T = self.step/100
+                    
+                    gaussian_curve = np.exp(-5*(1-T)**2)
+                    
+                    lamda_ent = lamda_mse = gaussian_curve
+                    
+                    if config.GC:
+                        if self.step < 100:
+                            loss = loss_student + lamda_ent*loss_ent + lamda_mse*loss_mse
+                        else:
+                            loss = loss_student + loss_ent + loss_mse + loss_pl
+                    else:
+                        loss = loss_student
+                        if config.MT and not config.ER and not config.CC and not config.PL:
+                            loss += consistency_loss
+                        if config.ER:
+                            loss += loss_ent
+                        if config.MSE:
+                            loss += loss_mse
+                        if config.PL:
+                            loss += loss_pl
                 else:
-                    loss = loss_student + loss_ent + loss_mse + loss_pl
-                
+                    loss = loss_student
                 t += [time.time()]
 
                 # Backward + optimize

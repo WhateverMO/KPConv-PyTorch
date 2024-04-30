@@ -59,6 +59,12 @@ class ISPRSConfig(Config):
     
     weak_learning_label = 10
     weak_supervision_perc = 0.00106
+    ALL=True
+    MT=False
+    ER=False
+    CC=False
+    PL=False
+    GC=False
     # method = ['avg_random', 'avg_distance', 'ball_random', 'f']
     # weak_select_method = 'ball_random'
     # weak_supervision_in_radius = 1
