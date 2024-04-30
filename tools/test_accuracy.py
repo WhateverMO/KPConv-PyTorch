@@ -34,6 +34,7 @@ def test_accuracy(test_predictions_path=None, test_groundtruth_path=None, label_
                                 }
     # label_values = np.zeros((0,), dtype=np.int32)
     label_values=np.sort([k for k, v in label_to_names.items()])
+    classes = len(label_values)
     print(len(label_values))
     # final_labels = labels[:]
     # for each in ignored_labels: final_labels.remove(each)
@@ -103,7 +104,7 @@ def test_accuracy(test_predictions_path=None, test_groundtruth_path=None, label_
         PRE, REC, F1, IoU, ACC = metrics(C)
 
         # PRE, REC, F1, IoU, ACC = smooth_metrics(C)
-        print('F1',F1.sum()/9,'ACC',ACC,'AVG.F1',F1.sum()/9)
+        print('F1',F1.sum()/classes,'ACC',ACC,'AVG.F1',F1.sum()/classes)
 
         print("macro F1: \t",F1_score_macro)
         print('MIOU: \t',IoU.mean())
@@ -123,6 +124,9 @@ def test_accuracy(test_predictions_path=None, test_groundtruth_path=None, label_
     # avg_macro = sum(total_list_macro)/len(total_list_macro)
     # MIOU=sum(total_list_miou)/len(total_list_miou)
     # ACC=sum(acc_list)/len(acc_list)
+    print("F1 score per class: ",F12)
+    print("IoU per class: ",IoU2)
+    print("ACC per class: ",ACC2)
     print(  "|  Avg  F1(macro) : ", F12.sum()/len(label_values),"|  Avg  miou : ",IoU2.sum()/len(label_values),"|  ACC : ",ACC2)
     print("test accuracy end")
     print()
