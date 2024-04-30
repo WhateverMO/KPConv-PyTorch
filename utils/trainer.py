@@ -400,7 +400,7 @@ class ModelTrainer:
                             loss += consistency_loss
                         if config.ER:
                             loss += loss_ent
-                        if config.MSE:
+                        if config.CC:
                             loss += loss_mse
                         if config.PL:
                             loss += loss_pl
