@@ -40,6 +40,7 @@ from utils.ply import read_ply
 from datasets.ModelNet40 import ModelNet40Dataset
 from datasets.S3DIS import S3DISDataset
 from datasets.ISPRS import ISPRSDataset
+from datasets.LASDU import LASDUDataset
 from datasets.SemanticKitti import SemanticKittiDataset
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -842,6 +843,9 @@ def plot_convergence(location=None):
             compare_convergences_segment(dataset, logs, logs_names)
         elif config.dataset.startswith('ISPRS'):
             dataset = ISPRSDataset(config, load_data=False)
+            compare_convergences_segment(dataset, logs, logs_names)
+        elif config.dataset.startswith('LASDU'):
+            dataset = LASDUDataset(config, load_data=False)
             compare_convergences_segment(dataset, logs, logs_names)
     elif config.dataset_task == 'slam_segmentation':
         if config.dataset.startswith('SemanticKitti'):

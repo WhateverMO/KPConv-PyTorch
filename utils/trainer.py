@@ -672,9 +672,17 @@ class ModelTrainer:
         val_smooth = 0.95
         softmax = torch.nn.Softmax(1)
 
-        # Do not validate if dataset has no validation cloud
-        if val_loader.dataset.validation_split not in val_loader.dataset.all_splits:
-            return
+        validation_split_list = []
+
+        if type(val_loader.dataset.validation_split) != list:
+            validation_split_list.append(val_loader.dataset.validation_split)
+        else:
+            validation_split_list = val_loader.dataset.validation_split
+
+        for val_split in validation_split_list:
+            # Do not validate if dataset has no validation cloud
+            if val_split not in val_loader.dataset.all_splits:
+                return
 
         # Number of classes including ignored labels
         nc_tot = val_loader.dataset.num_classes
