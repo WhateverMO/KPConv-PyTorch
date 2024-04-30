@@ -15,7 +15,7 @@ if __name__ == '__main__':
     dataset_original_path = join(dataset_path,'original_ply')
     redirect_stdout(join(log_path,'log_auto.txt'))
     plot_convergence(log_name)
-    attack_types = ['Ground', 'Buildings', 'Trees', 'Low vegetation', 'Artifacts', 'Unclassified',]
+    attack_types = ['Ground', 'Buildings', 'Trees', 'Low vegetation', 'Artifacts',]
     plot_conf_mat(join(log_path,'val_preds_'+max_epoch,'conf.txt'),attack_types)
     label_to_names= {0: 'ground',
                     1: 'building',
