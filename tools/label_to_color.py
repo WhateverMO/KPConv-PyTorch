@@ -18,7 +18,7 @@ def random_colors(N, bright=True, seed=0):
     return colors
 
 
-def label_to_color(origin_xyz=None,train_points_path=None,rgb_codes=None):
+def label_to_color(origin_xyz=None,train_points_path=None,rgb_codes_=None):
     print('label to color start')
     if origin_xyz is None:
         origin_xyz=r'D:\Python\KPConv-PyTorch-master\KPConv-PyTorch-master\test_H3D\kpconv\val_preds_160'
@@ -68,13 +68,15 @@ def label_to_color(origin_xyz=None,train_points_path=None,rgb_codes=None):
         data3 = cloud_points_true[:, :3]
         label3 = cloud_points_true[:, 3]
 
-        if rgb_codes is None:
+        if rgb_codes_ is None:
             raise ValueError('Please provide the RGB color codes for each class.')
-        elif type(rgb_codes) is not list:
-            if type(rgb_codes) is int:
-                rgb_codes = random_colors(rgb_codes)
+        elif type(rgb_codes_) is not list:
+            if type(rgb_codes_) is int:
+                rgb_codes = random_colors(rgb_codes_)
             else:
                 raise ValueError('Please provide the RGB color codes for each class as a list.')
+        else:
+            rgb_codes = rgb_codes_
         
         # rgb_codes = [[200, 90, 0],
         #             [255, 0, 0],
