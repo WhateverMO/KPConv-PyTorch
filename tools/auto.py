@@ -23,7 +23,7 @@ def auto(train_fn,label_to_names,rgb_codes,teacher=False):
     if teacher:
         label_to_color(dataset_original_path,join(log_path,'teacher_val_preds_'+max_epoch))
     test_models(log_path)
-    test_accuracy(join('test',log_name,'predictions'),dataset_original_path,label_to_names,rgb_codes)
+    test_accuracy(join('test',log_name,'predictions'),dataset_original_path,label_to_names)
     
         # rgb_codes = [[200, 90, 0],
         #             [255, 0, 0],
