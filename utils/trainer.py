@@ -298,7 +298,7 @@ class ModelTrainer:
         print('Finished Training')
         return
     
-    def train_weakly(self, student_net, teacher_net, training_loader, val_loader, config):
+    def train_weakly(self, student_net:nn.Module, teacher_net:nn.Module, training_loader, val_loader, config):
         """
         Train weakly the model on a particular dataset.
         """
@@ -419,16 +419,17 @@ class ModelTrainer:
 
                 t += [time.time()]
 
-                # ema update
-                student_model_dict = student_net.state_dict()
-                new_teacher_model_dict = {}
-                ema_keep_rate = config.ema_keep_rate
-                for key, value in teacher_net.state_dict().items():
-                    if key in student_model_dict.keys():
-                        new_teacher_model_dict[key] = ema_keep_rate * value + (1 - ema_keep_rate) * student_model_dict[key]
-                    else:
-                        raise ValueError('key not in student_model_dict')
-                teacher_net.load_state_dict(new_teacher_model_dict)
+                if config.MT or config.ALL:
+                    # ema update
+                    student_model_dict = student_net.state_dict()
+                    new_teacher_model_dict = {}
+                    ema_keep_rate = config.ema_keep_rate
+                    for key, value in teacher_net.state_dict().items():
+                        if key in student_model_dict.keys():
+                            new_teacher_model_dict[key] = ema_keep_rate * value + (1 - ema_keep_rate) * student_model_dict[key]
+                        else:
+                            raise ValueError('key not in student_model_dict')
+                    teacher_net.load_state_dict(new_teacher_model_dict)
                         
                 
                 torch.cuda.empty_cache()
@@ -516,9 +517,10 @@ class ModelTrainer:
             self.validation(student_net, val_loader, config)
             student_net.train()
             
-            teacher_net.eval()
-            self.validation(teacher_net, val_loader, config, is_teacher=True)
-            teacher_net.train()
+            if config.MT or config.ALL:
+                teacher_net.eval()
+                self.validation(teacher_net, val_loader, config, is_teacher=True)
+                teacher_net.train()
             
             finish = time.localtime()
 
