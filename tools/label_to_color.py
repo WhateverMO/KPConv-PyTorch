@@ -88,11 +88,11 @@ def label_to_color(origin_xyz=None,train_points_path=None,rgb_codes_=None):
         #              [255,97,0],
         #              [0,0,255],
         #              [255,255,0]]
-        rgb_codes = [[192,192,192],  # LASDU #ground
-                     [0,0,255],#building
-                     [0,100,0],#tree
-                     [152,251,152],#low veg
-                     [255,69,0]]#artifact
+        # rgb_codes = [[192,192,192],  # LASDU #ground
+        #              [0,0,255],#building
+        #              [0,100,0],#tree
+        #              [152,251,152],#low veg
+        #              [255,69,0]]#artifact
         # rgb_codes =[[0, 0, 255], #ISPRS
         #             [152, 245, 255],
         #             [190, 190, 190],
