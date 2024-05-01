@@ -21,4 +21,4 @@ if __name__ == '__main__':
                             7: 'shurb',
                             8: 'tree'
                                 }
-    auto(train_ISPRS_weak,rgb_codes,label_to_names,True)
+    auto(train_ISPRS_weak,label_to_names,rgb_codes,True)

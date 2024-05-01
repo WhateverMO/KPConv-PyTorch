@@ -12,4 +12,4 @@ if __name__ == '__main__':
                     2: 'tree',
                     3: 'low_evg',
                     4: 'artifact'}
-    auto(train_LASDU_weak,rgb_codes,label_to_names,True)
+    auto(train_LASDU_weak,label_to_names,rgb_codes,True)
