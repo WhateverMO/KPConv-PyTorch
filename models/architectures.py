@@ -373,6 +373,51 @@ class KPFCNN(nn.Module):
 
         # Combined loss
         return self.output_loss + self.reg_loss
+    
+    def loss_ent(self, outputs, labels, unlabeled_label):
+        """
+        Runs the loss on outputs of the model
+        :param outputs: logits
+        :param labels: labels
+        :return: loss_ent
+        """
+        # normalize the outputs
+        outputs = torch.softmax(outputs, dim=1)
+        # only calculate the unlabeled loss
+        outputs_unlabeled = outputs[labels == unlabeled_label]
+        # clamp
+        outputs_unlabeled = torch.clamp(outputs_unlabeled, min=1e-4)
+        # calculate entropy loss
+        Loss_ent = -torch.sum(outputs_unlabeled * torch.log(outputs_unlabeled), dim=1)
+        Loss_ent = torch.mean(Loss_ent)
+        return Loss_ent
+        
+    def loss_pl(self, outputs, outputs_pl, labels, unlabeled_label):
+        """
+        Runs the loss on outputs of the model
+        :param outputs: logits
+        :param labels: labels        
+        :return: loss_pl
+        """
+        # normalize the inputs
+        outputs = torch.softmax(outputs, dim=1)
+        outputs_pl = torch.softmax(outputs_pl, dim=1)
+        # only calculate the unlabeled loss
+        outputs_unlabeled = outputs[labels == unlabeled_label]
+        outputs_pl_unlabeled = outputs_pl[labels == unlabeled_label]
+        pseudo_label = torch.argmax(outputs_pl_unlabeled, dim=1)
+        # clamp
+        outputs_unlabeled = torch.clamp(outputs_unlabeled, min=1e-4)
+        # calculate the weight use the shanon entropy
+        weight = -torch.sum(outputs_unlabeled * torch.log(outputs_unlabeled), dim=1)
+        weight = 1 - weight/np.log(self.C)
+        # calculate the entropy of pseudo label and the outputs_unlabeled
+        pseudo_label_onehot = torch.zeros_like(outputs_unlabeled)
+        pseudo_label_onehot.scatter_(1, pseudo_label.unsqueeze(1), 1)
+        entropy_pl = -torch.sum(pseudo_label_onehot * torch.log(outputs_unlabeled), dim=1)
+        Loss_pls = weight * entropy_pl
+        Loss_pl = torch.mean(Loss_pls)
+        return Loss_pl
 
     def accuracy(self, outputs, labels):
         """
@@ -392,6 +437,34 @@ class KPFCNN(nn.Module):
         correct = (predicted == target).sum().item()
 
         return correct / total
+    
+    def accuracy_weak(self, outputs, labels, unlabeled_label):
+        """
+        Computes accuracy of the current batch
+        :param outputs: logits predicted by the network
+        :param labels: labels
+        :return: accuracy value
+        """
+
+        # only calculate the labeled points
+        outputs = outputs[labels != unlabeled_label]
+        labels = labels[labels != unlabeled_label]
+
+        if len(labels) == 0:
+            return float('nan')
+        
+        # Set all ignored labels to -1 and correct the other label to be in [0, C-1] range
+        target = - torch.ones_like(labels)
+        for i, c in enumerate(self.valid_labels):
+            target[labels == c] = i
+
+        predicted = torch.argmax(outputs.data, dim=1)
+        total = target.size(0)
+        correct = (predicted == target).sum().item()
+        
+        return correct / total
+
+        
 
 
 

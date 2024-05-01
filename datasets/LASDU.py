@@ -7,7 +7,7 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 #
-#      Class handling ISPRS dataset.
+#      Class handling LASDU dataset.
 #      Implements a Dataset, a Sampler, and a collate_fn
 #
 # ----------------------------------------------------------------------------------------------------------------------
@@ -60,29 +60,32 @@ def read_pts_file(file_path,lable = True):
         lables = data[:,-1]
     return points,features,lables
 
-class ISPRSDataset(PointCloudDataset):
-    """Class to handle ISPRS dataset."""
+class LASDUDataset(PointCloudDataset):
+    """Class to handle LASDU dataset."""
 
     def __init__(self, config, set='training', use_potentials=True, load_data=True):
         """
         This dataset is small enough to be stored in-memory, so load all point clouds here
         """
-        PointCloudDataset.__init__(self, 'ISPRS')
+        PointCloudDataset.__init__(self, 'LASDU')
 
         ############
         # Parameters
         ############
 
+        # • Label 1: Ground (color codes: #AFAFAF): artificial ground, roads, bare land.
+        # • Label 2: Buildings (color codes: #00007F): buildings.
+        # • Label 3: Trees (color codes: #09781A): tall and low trees.
+        # • Label 4: Low vegetation (color codes: #AAFF7F): bushes, grass, flower beds.
+        # • Label 5: Artifacts (color codes: #FF5500): walls, fences, light poles, vehicles, other artificial objects.
+        # • Label 0: Unclassified (color codes: #000000): noise, outliers, and unlabeled points.
         # Dict from labels to names
-        self.label_to_names = {0: 'Powerline',
-                               1: 'Low vegetation',
-                               2: 'surface',
-                               3: 'Car',
-                               4: 'Fence',
-                               5: 'Roof',
-                               6: 'Facade',
-                               7: 'shurb',
-                               8: 'Tree'
+        self.label_to_names = {0: 'Ground',
+                               1: 'Buildings',
+                               2: 'Trees',
+                               3: 'Low vegetation',
+                               4: 'Artifacts',
+                            #    5: 'Unclassified',
                                }
 
         # Initialize a bunch of variables concerning class labels
@@ -92,7 +95,7 @@ class ISPRSDataset(PointCloudDataset):
         self.ignored_labels = np.array([])
 
         # Dataset folder
-        self.path = '../../Data/ISPRS3D'
+        self.path = '../../Data/LASDU'
 
         # Type of task conducted on this dataset
         self.dataset_task = 'cloud_segmentation'
@@ -117,9 +120,9 @@ class ISPRSDataset(PointCloudDataset):
         ply_path = join(self.path, self.train_path)
 
         # Proportion of validation scenes
-        self.cloud_names = ['Vaihingen3D_Traininig','Vaihingen3D_EVAL_WITH_REF']
-        self.all_splits = [0, 1]
-        self.validation_split = 1
+        self.cloud_names = ['section_1','section_2','section_3','section_4']
+        self.all_splits = [0, 1, 2, 3]
+        self.validation_split = [0,3]
 
         # Number of models used per epoch
         if self.set == 'training':
@@ -127,7 +130,7 @@ class ISPRSDataset(PointCloudDataset):
         elif self.set in ['validation', 'test', 'ERF']:
             self.epoch_n = config.validation_size * config.batch_num
         else:
-            raise ValueError('Unknown set for ISPRS data: ', self.set)
+            raise ValueError('Unknown set for LASDU data: ', self.set)
 
         # Stop data is not needed
         if not load_data:
@@ -137,7 +140,7 @@ class ISPRSDataset(PointCloudDataset):
         # Prepare ply files
         ###################
 
-        self.prepare_ISPRS_ply()
+        self.prepare_LASDU_ply()
 
         ################
         # Load ply files
@@ -147,20 +150,20 @@ class ISPRSDataset(PointCloudDataset):
         self.files = []
         for i, f in enumerate(self.cloud_names):
             if self.set == 'training':
-                if self.all_splits[i] != self.validation_split:
+                if self.all_splits[i] not in self.validation_split:
                     self.files += [join(ply_path, f + '.ply')]
             elif self.set in ['validation', 'test', 'ERF']:
-                if self.all_splits[i] == self.validation_split:
+                if self.all_splits[i] in self.validation_split:
                     self.files += [join(ply_path, f + '.ply')]
             else:
-                raise ValueError('Unknown set for ISPRS data: ', self.set)
+                raise ValueError('Unknown set for LASDU data: ', self.set)
 
         if self.set == 'training':
             self.cloud_names = [f for i, f in enumerate(self.cloud_names)
-                                if self.all_splits[i] != self.validation_split]
+                                if self.all_splits[i] not in self.validation_split]
         elif self.set in ['validation', 'test', 'ERF']:
             self.cloud_names = [f for i, f in enumerate(self.cloud_names)
-                                if self.all_splits[i] == self.validation_split]
+                                if self.all_splits[i] in self.validation_split]
 
         if 0 < self.config.first_subsampling_dl <= 0.01:
             raise ValueError('subsampling_parameter too low (should be over 1 cm')
@@ -781,7 +784,7 @@ class ISPRSDataset(PointCloudDataset):
 
         return input_list
 
-    def prepare_ISPRS_ply(self):
+    def prepare_LASDU_ply(self):
 
         print('\nPreparing ply files')
         t0 = time.time()
@@ -803,12 +806,15 @@ class ISPRSDataset(PointCloudDataset):
                 cloud_features = np.empty((0, 3), dtype=np.uint8)
                 cloud_classes = np.empty((0, 1), dtype=np.int32)
 
-                pts_file = join(self.path, cloud_name + '.pts')
+                ply_file = join(self.path, cloud_name + '.ply')
                 
-                if not exists(pts_file):
-                    raise ValueError('File not found: ' + pts_file)
-                # Read pts file
-                points, features, labels = read_pts_file(pts_file)
+                if not exists(ply_file):
+                    raise ValueError('File not found: ' + ply_file)
+                data = read_ply(ply_file)
+                
+                points = np.vstack((data['x'], data['y'], data['z'])).T
+                features = np.vstack((data['num_of_return'], data['return_num'], data['intensity'])).T
+                labels = data['label']
                 
                 # Convert to numpy
                 points = np.array(points, dtype=np.float32)
@@ -1258,10 +1264,10 @@ class ISPRSDataset(PointCloudDataset):
 #       \********************************/
 
 
-class ISPRSSampler(Sampler):
-    """Sampler for ISPRS"""
+class LASDUSampler(Sampler):
+    """Sampler for LASDU"""
 
-    def __init__(self, dataset: ISPRSDataset):
+    def __init__(self, dataset: LASDUDataset):
         Sampler.__init__(self, dataset)
 
         # Dataset used by the sampler (no copy is made in memory)
@@ -1738,8 +1744,8 @@ class ISPRSSampler(Sampler):
         return
 
 
-class ISPRSCustomBatch:
-    """Custom batch definition with memory pinning for ISPRS"""
+class LASDUCustomBatch:
+    """Custom batch definition with memory pinning for LASDU"""
 
     def __init__(self, input_list):
 
@@ -1877,11 +1883,11 @@ class ISPRSCustomBatch:
         return all_p_list
 
 
-def ISPRSCollate(batch_data):
-    return ISPRSCustomBatch(batch_data)
+def LASDUCollate(batch_data):
+    return LASDUCustomBatch(batch_data)
 
-class ISPRSCustomBatchWeak:
-    """Custom batch definition with memory pinning for ISPRS"""
+class LASDUCustomBatchWeak:
+    """Custom batch definition with memory pinning for LASDU"""
 
     def __init__(self, input_list):
 
@@ -2023,8 +2029,8 @@ class ISPRSCustomBatchWeak:
         return all_p_list
 
 
-def ISPRSCollateWeak(batch_data):
-    return ISPRSCustomBatchWeak(batch_data)
+def LASDUCollateWeak(batch_data):
+    return LASDUCustomBatchWeak(batch_data)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

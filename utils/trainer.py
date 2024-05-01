@@ -79,11 +79,14 @@ class ModelTrainer:
         deform_params = [v for k, v in net.named_parameters() if 'offset' in k]
         other_params = [v for k, v in net.named_parameters() if 'offset' not in k]
         deform_lr = config.learning_rate * config.deform_lr_factor
-        self.optimizer = torch.optim.SGD([{'params': other_params},
-                                          {'params': deform_params, 'lr': deform_lr}],
-                                         lr=config.learning_rate,
-                                         momentum=config.momentum,
-                                         weight_decay=config.weight_decay)
+        # self.optimizer = torch.optim.SGD([{'params': other_params},
+        #                                   {'params': deform_params, 'lr': deform_lr}],
+        #                                  lr=config.learning_rate,
+        #                                  momentum=config.momentum,
+        #                                  weight_decay=config.weight_decay)
+        self.optimizer = torch.optim.Adam([{'params': other_params}],
+                                           lr=config.learning_rate,
+                                           weight_decay=config.weight_decay)
 
         # Choose to train on CPU or GPU
         if on_gpu and torch.cuda.is_available():
@@ -365,17 +368,48 @@ class ModelTrainer:
                 # Forward pass
                 outputs = student_net(batch, config)
                 loss_student = student_net.loss(outputs, batch.labels)
-                acc = student_net.accuracy(outputs, batch.labels)
+                loss_ent = student_net.loss_ent(outputs, batch.labels, config.weak_learning_label)
+                acc = student_net.accuracy_weak(outputs, batch.labels, config.weak_learning_label)
                 
                 outputs_teacher = teacher_net(batch, config)
                 
-                # kl_loss for output and output_teacher
-                consistency_loss = nn.KLDivLoss(reduction='batchmean')(nn.functional.log_softmax(outputs, dim=1), nn.functional.softmax(outputs_teacher, dim=1))
+                if config.MT or config.ALL:
+                    # kl_loss for output and output_teacher
+                    consistency_loss = nn.KLDivLoss(reduction='batchmean')(nn.functional.log_softmax(outputs, dim=1), nn.functional.softmax(outputs_teacher, dim=1))
                 
+                    # mse for output and output_teacher
+                    loss_mse = nn.MSELoss()(outputs, outputs_teacher)
+                    
+                    # loss pseudo label
+                    loss_pl = student_net.loss_pl(outputs, outputs_teacher, batch.labels, config.weak_learning_label)
+                    
+                    T = self.step/100
+                    
+                    gaussian_curve = np.exp(-5*(1-T)**2)
+                    
+                    lamda_ent = lamda_mse = gaussian_curve
+                    
+                    if config.GC:
+                        if self.step < 100:
+                            loss = loss_student + lamda_ent*loss_ent + lamda_mse*loss_mse
+                        else:
+                            loss = loss_student + loss_ent + loss_mse + loss_pl
+                    else:
+                        loss = loss_student
+                        if config.MT and not config.ER and not config.CC and not config.PL:
+                            loss += consistency_loss
+                        if config.ER:
+                            loss += loss_ent
+                        if config.CC:
+                            loss += loss_mse
+                        if config.PL:
+                            loss += loss_pl
+                else:
+                    loss = loss_student
                 t += [time.time()]
 
                 # Backward + optimize
-                loss = loss_student + consistency_loss
+                # loss = loss_student + consistency_loss
                 loss.backward()
 
                 if config.grad_clip_norm > 0:
@@ -423,12 +457,11 @@ class ModelTrainer:
                 # Log file
                 if config.saving:
                     with open(join(config.saving_path, 'training.txt'), "a") as file:
-                        message = '{:d} {:d} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}\n'
+                        message = '{:d} {:d} {:.3f} {:.3f} {:.3f} {:.3f}\n'
                         file.write(message.format(self.epoch,
                                                   self.step,
                                                   student_net.output_loss,
                                                   student_net.reg_loss,
-                                                  consistency_loss,
                                                   acc,
                                                   t[-1] - t0))
 
@@ -651,9 +684,17 @@ class ModelTrainer:
         val_smooth = 0.95
         softmax = torch.nn.Softmax(1)
 
-        # Do not validate if dataset has no validation cloud
-        if val_loader.dataset.validation_split not in val_loader.dataset.all_splits:
-            return
+        validation_split_list = []
+
+        if type(val_loader.dataset.validation_split) != list:
+            validation_split_list.append(val_loader.dataset.validation_split)
+        else:
+            validation_split_list = val_loader.dataset.validation_split
+
+        for val_split in validation_split_list:
+            # Do not validate if dataset has no validation cloud
+            if val_split not in val_loader.dataset.all_splits:
+                return
 
         # Number of classes including ignored labels
         nc_tot = val_loader.dataset.num_classes
