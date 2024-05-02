@@ -21,7 +21,7 @@ def auto(train_fn,label_to_names,rgb_codes,teacher=False):
     # plot_convergence(log_name)
     # plot_conf_mat(join(log_path,'teacher_val_preds_'+max_epoch,'conf.txt'))
     if teacher:
-        label_to_color(dataset_original_path,join(log_path,'teacher_val_preds_'+max_epoch))
+        label_to_color(dataset_original_path,join(log_path,'teacher_val_preds_'+max_epoch),rgb_codes)
     test_models(log_path)
     test_accuracy(join('test',log_name,'predictions'),dataset_original_path,label_to_names)
     
