@@ -1,0 +1,42 @@
+\documentclass{article}
+\title{Test title}
+\author{ zjj }
+\date{\today}
+\usepackage[ruled]{algorithm2e}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\begin{document}
+\begin{algorithm} 
+	\caption{ weakly supervised learning for point cloud semantic segmentation} 
+	\KwIn{Point cloud $ P \in \mathbb{R}^{N \times D} $, Labels $y \in \mathbb{Z}^M (M \ll N)$} 
+	\KwOut{Predictions $ p \in \mathbb{Z}^{N \times C} $} 
+	// Stage 1\;
+	\For{$epoch \gets  1 \ldots 100$} 
+	{ 
+		\For{each mini-batch $B$}
+		{
+			Train one step:\\
+			$w = w - \eta \nabla (l_{seg}(y,p_{l}|w)+
+			\lambda_{ent}l_{ent}(p_{u}|w)+
+			\lambda_{cc}l_{cc}(p^{teacher},p|w))$\;
+			\# $w$ is learned parameters of the student model, $p_{l}$ and $p_{u}$ are predictions in labeld and unlabeled data\;
+			Updata Teacher model:\\
+			$w^{teacher}_{t} = \alpha \cdot w^{teacher}_{t-1} + (1-\alpha)w^{student}_{t}$\;
+		}
+	} 
+	// Stage 2\;
+	\For{$epoch \gets  1 \ldots 100$} 
+	{ 
+		\For{each mini-batch $B$}
+		{
+			Generate pseudo-labels:\\
+			$y_{i}^{pl} = arg max$ ${p_{i}^{teacher}}, i \in B \cap P_{u}$\;
+			Train one step:\\
+			$w = w - \eta \nabla (l_{seg}(y,p_{l}|w)+
+			l_{ent}(p_{u}|w)+ l_{cc}(p^{teacher},p|w)+ {l_{seg}}^{pl}(y^{pl},p_{u}|w))$\;
+			Updata Teacher model:\\
+			$w^{teacher}_{t} = \alpha \cdot w^{teacher}_{t-1} + (1-\alpha)w^{student}_{t}$\;
+		}
+	}
+\end{algorithm}
+\end{document}
