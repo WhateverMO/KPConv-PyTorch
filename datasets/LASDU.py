@@ -897,16 +897,11 @@ class LASDUDataset(PointCloudDataset):
                 features = np.vstack((data['f1'], data['f2'], data['f3'])).T
                 labels = data['class']
 
-                if dl == 0:
-                    sub_points = points
-                    sub_features = features
-                    sub_labels = labels
-                else:
-                    # Subsample cloud
-                    sub_points, sub_features, sub_labels = grid_subsampling(points,
-                                                            features= features,
-                                                            labels=labels,
-                                                            sampleDl=dl)
+                # Subsample cloud
+                sub_points, sub_features, sub_labels = grid_subsampling(points,
+                                                        features= features,
+                                                        labels=labels,
+                                                        sampleDl=dl)
 
                 # Squeeze label
                 sub_labels = np.squeeze(sub_labels)
