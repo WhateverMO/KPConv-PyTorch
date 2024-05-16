@@ -520,7 +520,7 @@ class ModelTrainer:
             if config.MT or config.ALL:
                 teacher_net.eval()
                 self.validation(teacher_net, val_loader, config, is_teacher=True)
-                teacher_net.train()
+                # teacher_net.train()
             
             finish = time.localtime()
 
