@@ -37,7 +37,7 @@ if __name__ == '__main__':
             plt_name += 'GC_'
         plt_name += 'weak'
         
-        log_path,name = auto(train_ISPRS_weak, label_to_names, rgb_codes, True, name=plt_name, config=config_)
+        log_path,name = auto(train_ISPRS_weak, label_to_names, rgb_codes, True, name=plt_name, config_=config_)
         names.append(plt_name)
         if i == 0:
             start = log_path
