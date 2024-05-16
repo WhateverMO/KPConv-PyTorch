@@ -736,7 +736,7 @@ def compare_convergences_SLAM(dataset, list_of_paths, list_of_names=None):
 #
 
 
-def experiment_name_1():
+def experiment_name_1(start, end, names=None):
     """
     In this function you choose the results you want to plot together, to compare them as an experiment.
     Just return the list of log paths (like 'results/Log_2020-04-04_10-04-42' for example), and the associated names
@@ -744,9 +744,9 @@ def experiment_name_1():
     Below an example of how to automatically gather all logs between two dates, and name them.
     """
 
-    # Using the dates of the logs, you can easily gather consecutive ones. All logs should be of the same dataset.
-    start = 'Log_2020-04-22_11-52-58'
-    end = 'Log_2023-07-29_12-40-27'
+    # # Using the dates of the logs, you can easily gather consecutive ones. All logs should be of the same dataset.
+    # start = 'Log_2020-04-22_11-52-58'
+    # end = 'Log_2023-07-29_12-40-27'
 
     # Name of the result path
     res_path = 'results'
@@ -755,10 +755,7 @@ def experiment_name_1():
     logs = np.sort([join(res_path, l) for l in listdir_str(res_path) if start <= l <= end])
 
     # Give names to the logs (for plot legends)
-    logs_names = ['name_log_1',
-                  'name_log_2',
-                  'name_log_3',
-                  'name_log_4']
+    logs_names = names
 
     # safe check log names
     logs_names = np.array(logs_names[:len(logs)])
@@ -813,7 +810,7 @@ def experiment_name_2(location=None,name=None):
 #       \***************/
 #
 
-def plot_convergence(start, end, log_path=None, names=None):
+def plot_convergence(start, end, names=None):
     print('plot convergence start')
 
     ######################################################
@@ -821,9 +818,9 @@ def plot_convergence(start, end, log_path=None, names=None):
     ######################################################
 
     # My logs: choose the logs to show
-    logs, logs_names = experiment_name_2(location=location,name=name)
+    logs, logs_names = experiment_name_1(start, end, names)
     
-    plot_convergence_main(logs, logs_names, log_path=log_path)
+    plot_convergence_main(logs, logs_names)
 
 def plot_convergence(location=None,log_path=None,name=None):
     print('plot convergence start')

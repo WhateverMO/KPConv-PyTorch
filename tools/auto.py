@@ -17,7 +17,8 @@ def auto(train_fn,label_to_names,rgb_codes,teacher=False,name='',config_=None):
     config_.plot_name = name
     
     with open(join(log_path,'config.json'), 'w') as f:
-        json.dump(config_.__dict__, f, indent=4)
+        json_config = vars(config_)
+        json.dump(json_config, f, indent=4)
         
     redirect_stdout(join(log_path,'log_auto.txt'))
     plot_convergence(log_name,log_path,name)
