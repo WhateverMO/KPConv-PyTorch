@@ -49,6 +49,7 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     plt.xlabel('Predicted label', font)
     # plt.savefig(name + '.png', dpi=300)
     plt.savefig(join(log_path,auto+'conf.pdf'))
+    plt.savefig(join('log_pic',auto+'conf.pdf'))
     plt.show()
 
 #

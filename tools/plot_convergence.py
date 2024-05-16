@@ -320,7 +320,11 @@ def compare_trainings(list_of_paths, list_of_labels=None, log_path=None):
     plt.legend(loc=1)
     plt.title('Losses compare')
     # save figures
-    plt.savefig(join(log_path, auto+'loss.png'))
+    if log_path is None:
+        pass
+    else:
+        plt.savefig(join(log_path, auto+'loss.pdf'))
+        plt.savefig(join('log_pic', auto+'loss.pdf'))
 
     # Customize the graph
     ax = fig.gca()
@@ -349,7 +353,11 @@ def compare_trainings(list_of_paths, list_of_labels=None, log_path=None):
     # ax.set_yticks(np.arange(0.8, 1.02, 0.02))
 
     # save figures
-    plt.savefig(join(log_path, auto+'time.png'))
+    if log_path is None:
+        pass
+    else:
+        plt.savefig(join(log_path, auto+'time.pdf'))
+        plt.savefig(join('log_pic', auto+'time.pdf'))
 
     # Show all
     plt.show()
@@ -468,7 +476,11 @@ def compare_convergences_segment(dataset, list_of_paths, list_of_names=None, log
             #ax.set_yticks(np.arange(0.8, 1.02, 0.02))
 
     # save figures
-    plt.savefig(join(log_path, auto+'mIoUs.png'))
+    if log_path is None:
+        pass
+    else:
+        plt.savefig(join(log_path, auto+'mIoUs.pdf'))
+        plt.savefig(join('log_pic', auto+'mIoUs.pdf'))
 
     # Show all
     plt.show()
