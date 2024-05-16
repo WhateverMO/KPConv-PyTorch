@@ -30,7 +30,8 @@ from os.path import isfile, join, exists
 from os import listdir, remove, getcwd
 from sklearn.metrics import confusion_matrix
 import time
-from os.path import join,exists,makedirs
+from os.path import join,exists
+from os import makedirs
 
 # My libs
 from utils.config import Config
