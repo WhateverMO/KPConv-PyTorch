@@ -3,7 +3,7 @@ import numpy as np
 # import seaborn as sns
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
-from os.path import join
+from os.path import join, exists, makedirs
 
 auto = False
 
@@ -47,6 +47,9 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.ylabel('True label', font)
     plt.xlabel('Predicted label', font)
+    # check log_pic exist
+    if not exists('log_pic'):
+        makedirs('log_pic')
     # plt.savefig(name + '.png', dpi=300)
     plt.savefig(join(log_path,auto+'conf.pdf'))
     plt.savefig(join('log_pic',auto+'conf.pdf'))

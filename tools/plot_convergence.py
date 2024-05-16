@@ -30,7 +30,7 @@ from os.path import isfile, join, exists
 from os import listdir, remove, getcwd
 from sklearn.metrics import confusion_matrix
 import time
-from os.path import join
+from os.path import join,exists,makedirs
 
 # My libs
 from utils.config import Config
@@ -323,6 +323,8 @@ def compare_trainings(list_of_paths, list_of_labels=None, log_path=None):
     if log_path is None:
         pass
     else:
+        if not exists('log_pic'):
+            makedirs('log_pic')
         plt.savefig(join(log_path, auto+'loss.pdf'))
         plt.savefig(join('log_pic', auto+'loss.pdf'))
 
@@ -356,6 +358,8 @@ def compare_trainings(list_of_paths, list_of_labels=None, log_path=None):
     if log_path is None:
         pass
     else:
+        if not exists('log_pic'):
+            makedirs('log_pic')
         plt.savefig(join(log_path, auto+'time.pdf'))
         plt.savefig(join('log_pic', auto+'time.pdf'))
 
@@ -479,6 +483,8 @@ def compare_convergences_segment(dataset, list_of_paths, list_of_names=None, log
     if log_path is None:
         pass
     else:
+        if not exists('log_pic'):
+            makedirs('log_pic')
         plt.savefig(join(log_path, auto+'mIoUs.pdf'))
         plt.savefig(join('log_pic', auto+'mIoUs.pdf'))
 
