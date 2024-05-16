@@ -322,7 +322,9 @@ def compare_trainings(list_of_paths, list_of_labels=None, log_path=None):
     plt.title('Losses compare')
     # save figures
     if log_path is None:
-        pass
+        if not exists('pic'):
+            makedirs('pic')
+        plt.savefig('pic/loss.pdf')
     else:
         if not exists('log_pic'):
             makedirs('log_pic')
@@ -357,7 +359,9 @@ def compare_trainings(list_of_paths, list_of_labels=None, log_path=None):
 
     # save figures
     if log_path is None:
-        pass
+        if not exists('pic'):
+            makedirs('pic')
+        plt.savefig('pic/time.pdf')
     else:
         if not exists('log_pic'):
             makedirs('log_pic')
@@ -482,7 +486,9 @@ def compare_convergences_segment(dataset, list_of_paths, list_of_names=None, log
 
     # save figures
     if log_path is None:
-        pass
+        if not exists('pic'):
+            makedirs('pic')
+        plt.savefig('pic/mIoUs.pdf')
     else:
         if not exists('log_pic'):
             makedirs('log_pic')
