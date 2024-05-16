@@ -47,7 +47,7 @@ if __name__ == '__main__':
     rgb_codes = rgb_codes_dict[dataset_name]
     label_to_names = label_to_names_dict[dataset_name]
     plt_name = 'full supervision'
-    log_path,name = auto(train_ISPRS, label_to_names, rgb_codes, False, name=plt_name, config=config_)
+    log_path,name = auto(train_ISPRS, label_to_names, rgb_codes, False, name=plt_name, config_=config_)
     
     end = log_path
     
