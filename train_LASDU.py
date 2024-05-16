@@ -215,7 +215,7 @@ class LASDUConfig(Config):
 #       \***************/
 #
 
-def train_LASDU_main(queue):
+def train_LASDU_main(queue,config=None):
 
     ############################
     # Initialize the environment
@@ -266,7 +266,8 @@ def train_LASDU_main(queue):
     print('****************')
 
     # Initialize configuration class
-    config = LASDUConfig()
+    if config is None:
+        config = LASDUConfig()
     if previous_training_path:
         config.load(os.path.join('results', previous_training_path))
         config.saving_path = None
@@ -343,11 +344,11 @@ def train_LASDU_main(queue):
     print('Forcing exit now')
     os.kill(os.getpid(), signal.SIGINT)
 
-def train_LASDU():
-    print('Starting training LASDU weakly supervised')
+def train_LASDU(config=None):
+    print('Starting training LASDU full supervision')
     from multiprocessing import Queue, Process
     queue = Queue()
-    p = Process(target=train_LASDU_main, args=(queue,))
+    p = Process(target=train_LASDU_main, args=(queue,config))
     p.start()
     res = queue.get()
     queue.close()

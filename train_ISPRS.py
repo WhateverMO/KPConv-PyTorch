@@ -24,6 +24,7 @@
 # Common libs
 import signal
 import os
+import copy
 
 # Dataset
 from datasets.ISPRS import *
@@ -32,6 +33,7 @@ from torch.utils.data import DataLoader
 from utils.config import Config
 from utils.trainer import ModelTrainer
 from models.architectures import KPFCNN
+from tools.logger import create_logger
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -213,11 +215,15 @@ class ISPRSConfig(Config):
 #       \***************/
 #
 
-if __name__ == '__main__':
+def train_ISPRS_main(queue,config=None):
 
     ############################
     # Initialize the environment
     ############################
+    
+    logger = create_logger()
+    
+    sys.stdout = logger
 
     # Set which gpu is going to be used
     GPU_ID = '0'
@@ -260,7 +266,8 @@ if __name__ == '__main__':
     print('****************')
 
     # Initialize configuration class
-    config = ISPRSConfig()
+    if config is None:
+        config = ISPRSConfig()
     if previous_training_path:
         config.load(os.path.join('results', previous_training_path))
         config.saving_path = None
@@ -323,11 +330,32 @@ if __name__ == '__main__':
     trainer = ModelTrainer(net, config, chkp_path=chosen_chkp)
     print('Done in {:.1f}s\n'.format(time.time() - t1))
 
+    logger.redirect(os.path.join(config.saving_path, 'log.txt'))
+
     print('\nStart training')
     print('**************')
 
     # Training
     trainer.train(net, training_loader, test_loader, config)
 
+    res = (test_dataset.path, config)
+    queue.put(res)
+
     print('Forcing exit now')
     os.kill(os.getpid(), signal.SIGINT)
+
+def train_ISPRS(config=None):
+    print('Starting training ISPRS full supervision')
+    from multiprocessing import Process, Queue
+    queue = Queue()
+    p = Process(target=train_ISPRS_main, args=(queue,config))
+    p.start()
+    res = queue.get()
+    queue.close()
+    p.join()
+    print('Training done')
+    print()
+    return res
+
+if __name__ == '__main__':
+    print(train_ISPRS())

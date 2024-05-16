@@ -30,6 +30,7 @@ from os.path import isfile, join, exists
 from os import listdir, remove, getcwd
 from sklearn.metrics import confusion_matrix
 import time
+from os.path import join
 
 # My libs
 from utils.config import Config
@@ -216,7 +217,7 @@ def load_snap_clouds(path, dataset, only_last=False):
 #
 
 
-def compare_trainings(list_of_paths, list_of_labels=None):
+def compare_trainings(list_of_paths, list_of_labels=None, log_path=None):
 
     # Parameters
     # **********
@@ -319,7 +320,7 @@ def compare_trainings(list_of_paths, list_of_labels=None):
     plt.legend(loc=1)
     plt.title('Losses compare')
     # save figures
-    plt.savefig(auto+'loss.png')
+    plt.savefig(join(log_path, auto+'loss.png'))
 
     # Customize the graph
     ax = fig.gca()
@@ -348,13 +349,13 @@ def compare_trainings(list_of_paths, list_of_labels=None):
     # ax.set_yticks(np.arange(0.8, 1.02, 0.02))
 
     # save figures
-    plt.savefig(auto+'time.png')
+    plt.savefig(join(log_path, auto+'time.png'))
 
     # Show all
     plt.show()
 
 
-def compare_convergences_segment(dataset, list_of_paths, list_of_names=None):
+def compare_convergences_segment(dataset, list_of_paths, list_of_names=None, log_path=None):
 
     # Parameters
     # **********
@@ -467,7 +468,7 @@ def compare_convergences_segment(dataset, list_of_paths, list_of_names=None):
             #ax.set_yticks(np.arange(0.8, 1.02, 0.02))
 
     # save figures
-    plt.savefig(auto+'mIoUs.png')
+    plt.savefig(join(log_path, auto+'mIoUs.png'))
 
     # Show all
     plt.show()
@@ -746,7 +747,7 @@ def experiment_name_1():
     return logs, logs_names
 
 
-def experiment_name_2(location=None):
+def experiment_name_2(location=None,name=None):
     """
     In this function you choose the results you want to plot together, to compare them as an experiment.
     Just return the list of log paths (like 'results/Log_2020-04-04_10-04-42' for example), and the associated names
@@ -756,9 +757,7 @@ def experiment_name_2(location=None):
 
     # Using the dates of the logs, you can easily gather consecutive ones. All logs should be of the same dataset.
     if location is None:
-        start = 'Log_2024-03-17_10-33-32'
-        start = 'Log_2024-03-17_11-13-25'
-        end = 'Log_2024-03-17_11-13-25'
+        raise ValueError('Please provide a location for the logs')
     else:
         global auto
         auto = location
@@ -777,11 +776,7 @@ def experiment_name_2(location=None):
 
     # Give names to the logs (for plot legends)
     logs_names = [
-                    'name_log_inserted',
-                    'name_log_1',
-                    'name_log_2',
-                    'name_log_3',
-                    'name_log_4',
+                    name,
                 ]
 
     # safe check log names
@@ -799,7 +794,7 @@ def experiment_name_2(location=None):
 #       \***************/
 #
 
-def plot_convergence(location=None):
+def plot_convergence(start, end, log_path=None, names=None):
     print('plot convergence start')
 
     ######################################################
@@ -807,8 +802,23 @@ def plot_convergence(location=None):
     ######################################################
 
     # My logs: choose the logs to show
-    logs, logs_names = experiment_name_2(location=location)
+    logs, logs_names = experiment_name_2(location=location,name=name)
+    
+    plot_convergence_main(logs, logs_names, log_path=log_path)
 
+def plot_convergence(location=None,log_path=None,name=None):
+    print('plot convergence start')
+
+    ######################################################
+    # Choose a list of log to plot together for comparison
+    ######################################################
+
+    # My logs: choose the logs to show
+    logs, logs_names = experiment_name_2(location=location,name=name)
+    
+    plot_convergence_main(logs, logs_names, log_path=log_path)
+
+def plot_convergence_main(logs, logs_names, log_path=None):
     ################
     # Plot functions
     ################
@@ -832,21 +842,21 @@ def plot_convergence(location=None):
             plot_dataset = this_dataset
 
     # Plot the training loss and accuracy
-    compare_trainings(logs, logs_names)
+    compare_trainings(logs, logs_names, log_path=log_path)
 
-    # Plot the validation
+    # Plot the validation TODO: now only support compare_convergences_segment by log_path, other functions need to be modified
     if config.dataset_task == 'classification':
         compare_convergences_classif(logs, logs_names)
     elif config.dataset_task == 'cloud_segmentation':
         if config.dataset.startswith('S3DIS'):
             dataset = S3DISDataset(config, load_data=False)
-            compare_convergences_segment(dataset, logs, logs_names)
+            compare_convergences_segment(dataset, logs, logs_names, log_path=log_path)
         elif config.dataset.startswith('ISPRS'):
             dataset = ISPRSDataset(config, load_data=False)
-            compare_convergences_segment(dataset, logs, logs_names)
+            compare_convergences_segment(dataset, logs, logs_names, log_path=log_path)
         elif config.dataset.startswith('LASDU'):
             dataset = LASDUDataset(config, load_data=False)
-            compare_convergences_segment(dataset, logs, logs_names)
+            compare_convergences_segment(dataset, logs, logs_names, log_path=log_path)
     elif config.dataset_task == 'slam_segmentation':
         if config.dataset.startswith('SemanticKitti'):
             dataset = SemanticKittiDataset(config)

@@ -231,7 +231,7 @@ class LASDUConfig(Config):
 #       \***************/
 #
 
-def train_LASDU_weak_main(queue):
+def train_LASDU_weak_main(queue,config=None):
 
     ############################
     # Initialize the environment
@@ -281,11 +281,16 @@ def train_LASDU_weak_main(queue):
     print('Data Preparation')
     print('****************')
 
-    # Initialize configuration class
-    config = LASDUConfig()
-    config_stage2 = LASDUConfig()
-    config_stage2.epoch_steps = config.epoch_steps_stage2
-    config_stage2.max_epoch = config.max_epoch_stage2
+    if config is None:
+        # Initialize configuration class
+        config = LASDUConfig()
+        config_stage2 = LASDUConfig()
+        config_stage2.epoch_steps = config.epoch_steps_stage2
+        config_stage2.max_epoch = config.max_epoch_stage2
+    else:
+        config_stage2 = copy.deepcopy(config)
+        config_stage2.epoch_steps = config.epoch_steps_stage2
+        config_stage2.max_epoch = config.max_epoch_stage2
     if previous_training_path:
         config.load(os.path.join('results', previous_training_path))
         config.saving_path = None
@@ -409,11 +414,11 @@ def train_LASDU_weak_main(queue):
     os.kill(os.getpid(), signal.SIGINT)
 
 
-def train_LASDU_weak():
+def train_LASDU_weak(config=None):
     print('Starting training LASDU weakly supervised')
     from multiprocessing import Queue, Process
     queue = Queue()
-    p = Process(target=train_LASDU_weak_main, args=(queue,))
+    p = Process(target=train_LASDU_weak_main, args=(queue,config))
     p.start()
     res = queue.get()
     queue.close()
