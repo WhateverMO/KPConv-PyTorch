@@ -423,14 +423,14 @@ def train_ISPRS_weak_main(queue,config=None):
 def train_ISPRS_weak(config=None):
     print('Starting training ISPRS weakly supervised')
     from multiprocessing import Queue, Process
-    queue = Queue()
-    p = Process(target=train_ISPRS_weak_main, args=(queue,config))
-    p.start()
-    res = queue.get()
-    queue.close()
-    p.join()
+    with Queue() as queue:
+        p = Process(target=train_ISPRS_weak_main, args=(queue,config))
+        p.start()
+        res = queue.get()
+        p.join()
     print('Training done')
     print()
+    p.terminate()
     return res
 
 if __name__ == '__main__':

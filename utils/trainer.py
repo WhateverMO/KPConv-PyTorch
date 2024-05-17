@@ -389,7 +389,7 @@ class ModelTrainer:
                     
                     lamda_ent = lamda_mse = gaussian_curve
                     
-                    if config.GC:
+                    if config.GC or config.ALL:
                         if self.step < 100:
                             loss = loss_student + lamda_ent*loss_ent + lamda_mse*loss_mse
                         else:
