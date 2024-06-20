@@ -377,8 +377,9 @@ class ModelTrainer:
                     # kl_loss for output and output_teacher
                     consistency_loss = nn.KLDivLoss(reduction='batchmean')(nn.functional.log_softmax(outputs, dim=1), nn.functional.softmax(outputs_teacher, dim=1))
                 
-                    # mse for output and output_teacher
-                    loss_mse = nn.MSELoss()(outputs, outputs_teacher)
+                    # cc for output and output_teacher
+                    _, targets_teacher = torch.max(outputs_teacher, 1)
+                    loss_cc = nn.CrossEntropyLoss()(outputs, targets_teacher)
                     
                     # loss pseudo label
                     loss_pl = student_net.loss_pl(outputs, outputs_teacher, batch.labels, config.weak_learning_label)
@@ -387,23 +388,25 @@ class ModelTrainer:
                     
                     gaussian_curve = np.exp(-5*(1-T)**2)
                     
-                    lamda_ent = lamda_mse = gaussian_curve
+                    lamda_ent = lamda_cc = gaussian_curve
+                    lamda_pl = 1
                     
-                    if config.GC or config.ALL:
+                    if config.GC:
                         if self.step < 100:
-                            loss = loss_student + lamda_ent*loss_ent + lamda_mse*loss_mse
+                            lamda_pl = 0
                         else:
-                            loss = loss_student + loss_ent + loss_mse + loss_pl
+                            lamda_ent = lamda_cc = lamda_pl = 1
                     else:
-                        loss = loss_student
-                        if config.MT and not config.ER and not config.CC and not config.PL:
-                            loss += consistency_loss
-                        if config.ER:
-                            loss += loss_ent
-                        if config.CC:
-                            loss += loss_mse
-                        if config.PL:
-                            loss += loss_pl
+                        lamda_ent = lamda_cc = lamda_pl = 1
+                    loss = loss_student
+                    if config.MT and not config.ER and not config.CC and not config.PL:
+                        loss += consistency_loss
+                    if config.ER or config.ALL:
+                        loss += lamda_ent*loss_ent
+                    if config.CC or config.ALL:
+                        loss += lamda_cc*loss_cc
+                    if config.PL or config.ALL:
+                        loss += lamda_pl*loss_pl
                 else:
                     loss = loss_student
                 t += [time.time()]

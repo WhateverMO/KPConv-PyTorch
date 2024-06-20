@@ -76,8 +76,27 @@
 # # get the second word of path
 # second_word = path.split('/')[1]
 # print(second_word)
-import numpy as np
+# import numpy as np
 
-a = np.array([2,5,6,5,10])
+# a = np.array([2,5,6,5,10])
 
-print(np.where(a == 5))
+# print(np.where(a == 5))
+
+class A:
+    ALL = False
+    MT = True
+    CC = False
+    
+    def __init__(self):
+        self.a = 10
+        self.b = 20
+        
+a = A()
+print(a.__class__.__dict__)
+print(a.__dict__)
+print(a.ALL)
+print()
+a.ALL = True
+print(a.__class__.__dict__)
+print(a.__dict__)
+print(a.ALL)

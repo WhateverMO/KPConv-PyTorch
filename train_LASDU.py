@@ -169,7 +169,7 @@ class LASDUConfig(Config):
     #####################
 
     # Maximal number of epochs
-    max_epoch = 500
+    max_epoch = 300
 
     # Learning rate management
     learning_rate = 1e-2
