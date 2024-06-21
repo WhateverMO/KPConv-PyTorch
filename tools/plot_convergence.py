@@ -52,6 +52,7 @@ from datasets.SemanticKitti import SemanticKittiDataset
 #
 
 auto = False
+compare_name = None
 
 def listdir_str(path):
 
@@ -324,7 +325,7 @@ def compare_trainings(list_of_paths, list_of_labels=None, log_path=None):
     if log_path is None:
         if not exists('pic'):
             makedirs('pic')
-        plt.savefig('pic/loss.pdf')
+        plt.savefig(join('pic',compare_name,'loss.pdf'))
     else:
         if not exists('log_pic'):
             makedirs('log_pic')
@@ -361,7 +362,7 @@ def compare_trainings(list_of_paths, list_of_labels=None, log_path=None):
     if log_path is None:
         if not exists('pic'):
             makedirs('pic')
-        plt.savefig('pic/time.pdf')
+        plt.savefig(join('pic',compare_name,'time.pdf'))
     else:
         if not exists('log_pic'):
             makedirs('log_pic')
@@ -488,7 +489,7 @@ def compare_convergences_segment(dataset, list_of_paths, list_of_names=None, log
     if log_path is None:
         if not exists('pic'):
             makedirs('pic')
-        plt.savefig('pic/mIoUs.pdf')
+        plt.savefig(join('pic',compare_name,'mIoUs.pdf'))
     else:
         if not exists('log_pic'):
             makedirs('log_pic')
@@ -816,7 +817,7 @@ def experiment_name_2(location=None,name=None):
 #       \***************/
 #
 
-def plot_convergence(start, end, names=None):
+def plot_convergence0(start, end, names=None,name='000def'):
     print('plot convergence start')
 
     ######################################################
@@ -825,6 +826,10 @@ def plot_convergence(start, end, names=None):
 
     # My logs: choose the logs to show
     logs, logs_names = experiment_name_1(start, end, names)
+    
+    global compare_name
+    
+    compare_name = name
     
     plot_convergence_main(logs, logs_names)
 

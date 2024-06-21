@@ -8,7 +8,7 @@ from os.path import join
 import json
 
 
-def auto(train_fn,label_to_names,rgb_codes,teacher=False,name='',config_=None):
+def auto_func(train_fn,label_to_names,rgb_codes,teacher=False,name='',config_=None):
     dataset_path,config = train_fn(config_)
     max_epoch = str(config.max_epoch)
     log_path = config.saving_path
@@ -33,8 +33,16 @@ def auto(train_fn,label_to_names,rgb_codes,teacher=False,name='',config_=None):
     test_models(log_path)
     test_accuracy(join('test',log_name,'predictions'),dataset_original_path,label_to_names)
     
-    return dataset_path,name
+    return dataset_path,log_name,name
 
+def auto(train_fn,label_to_names,rgb_codes,teacher=False,name='',config_=None):
+    from concurrent.futures import ProcessPoolExecutor
+    executor = ProcessPoolExecutor(max_workers=1)
+    try:
+        dataset_path,log_name,name = executor.submit(auto_func,train_fn,label_to_names,rgb_codes,teacher,name,config_).result()
+    finally:
+        executor.shutdown(wait=True)
+    return dataset_path,log_name,name
 
 rgb_codes_dict ={
     'ISPRS':

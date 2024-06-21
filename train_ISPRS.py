@@ -129,6 +129,8 @@ class ISPRSConfig(Config):
     # Size of the first subsampling grid in meter (increase value to reduce memory cost)
     # first_subsampling_dl = 0.03
     first_subsampling_dl = 0.4
+    # dev
+    # first_subsampling_dl = 0.9
     
     # Radius of convolution in "number grid cell". (2.5 is the standard value)
     conv_radius = 2.5
@@ -170,6 +172,8 @@ class ISPRSConfig(Config):
 
     # Maximal number of epochs
     max_epoch = 500
+    # dev
+    # max_epoch = 50
 
     # Learning rate management
     learning_rate = 1e-2
@@ -182,6 +186,8 @@ class ISPRSConfig(Config):
 
     # Number of steps per epochs
     epoch_steps = 500
+    # dev
+    # epoch_steps = 5
 
     # Number of validation examples per epoch
     validation_size = 50
@@ -215,7 +221,7 @@ class ISPRSConfig(Config):
 #       \***************/
 #
 
-def train_ISPRS_main(queue,config=None):
+def train_ISPRS_main(config=None):
 
     ############################
     # Initialize the environment
@@ -339,20 +345,23 @@ def train_ISPRS_main(queue,config=None):
     trainer.train(net, training_loader, test_loader, config)
 
     res = (test_dataset.path, config)
-    queue.put(res)
 
-    print('Forcing exit now')
-    os.kill(os.getpid(), signal.SIGINT)
+    # print('Forcing exit now')
+    # os.kill(os.getpid(), signal.SIGINT)
+
+    return res
+
 
 def train_ISPRS(config=None):
-    print('Starting training ISPRS full supervision')
-    from multiprocessing import Process, Queue
-    queue = Queue()
-    p = Process(target=train_ISPRS_main, args=(queue,config))
-    p.start()
-    res = queue.get()
-    queue.close()
-    p.join()
+    print('Starting training ISPRS full supervised')
+    from concurrent.futures import ProcessPoolExecutor
+    executor = ProcessPoolExecutor(max_workers=1)
+    try:
+        future = executor.submit(train_ISPRS_main, config)
+        res = future.result()
+    finally:
+        executor.shutdown(wait=True)
+
     print('Training done')
     print()
     return res

@@ -215,7 +215,7 @@ class LASDUConfig(Config):
 #       \***************/
 #
 
-def train_LASDU_main(queue,config=None):
+def train_LASDU_main(config=None):
 
     ############################
     # Initialize the environment
@@ -338,21 +338,22 @@ def train_LASDU_main(queue,config=None):
     # Training
     trainer.train(net, training_loader, test_loader, config)
 
-    res = (test_dataset.path, config)  
-    queue.put(res)
+    res = (test_dataset.path, config)
 
-    print('Forcing exit now')
-    os.kill(os.getpid(), signal.SIGINT)
+    # print('Forcing exit now')
+    # os.kill(os.getpid(), signal.SIGINT)
+    
+    return res
 
 def train_LASDU(config=None):
     print('Starting training LASDU full supervision')
-    from multiprocessing import Queue, Process
-    queue = Queue()
-    p = Process(target=train_LASDU_main, args=(queue,config))
-    p.start()
-    res = queue.get()
-    queue.close()
-    p.join()
+    from concurrent.futures import ProcessPoolExecutor
+    executor = ProcessPoolExecutor(max_workers=1)
+    try:
+        future = executor.submit(train_LASDU_main, config)
+        res = future.result()
+    finally:
+        executor.shutdown(wait=True)
     print('Training done')
     print()
     return res

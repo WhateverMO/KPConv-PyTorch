@@ -7,6 +7,9 @@
 /kernels/dispositions
 core
 
+/pic
+/log_pic
+
 # VSCode related
 *.code-workspace
 .vscode/

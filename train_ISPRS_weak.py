@@ -149,6 +149,8 @@ class ISPRSConfig(Config):
     # Size of the first subsampling grid in meter (increase value to reduce memory cost)
     # first_subsampling_dl = 0.03
     first_subsampling_dl = 0.4
+    # dev
+    # first_subsampling_dl = 0.9
     
     # Radius of convolution in "number grid cell". (2.5 is the standard value)
     conv_radius = 2.5
@@ -190,6 +192,8 @@ class ISPRSConfig(Config):
 
     # Maximal number of epochs
     max_epoch = 500
+    # dev
+    # max_epoch = 50
     max_epoch_stage2 = 0
 
     # Learning rate management
@@ -203,6 +207,8 @@ class ISPRSConfig(Config):
 
     # Number of steps per epochs
     epoch_steps = 300
+    # dev
+    # epoch_steps = 2
     epoch_steps_stage2 = 0
 
     # Number of validation examples per epoch
@@ -237,7 +243,7 @@ class ISPRSConfig(Config):
 #       \***************/
 #
 
-def train_ISPRS_weak_main(queue,config=None):
+def train_ISPRS_weak_main(config=None):
 
     ############################
     # Initialize the environment
@@ -413,22 +419,24 @@ def train_ISPRS_weak_main(queue,config=None):
     else:
         trainer.train(net, training_loader, test_loader, config)
     
-    res = (test_dataset.path, config)  
-    queue.put(res)
+    res = (test_dataset.path, config)
     
-    print('Forcing exit now')
-    os.kill(os.getpid(), signal.SIGINT)
+    print('training done')
+    # print('Forcing exit now')
+    # os.kill(os.getpid(), signal.SIGINT)
+    return res
 
 
 def train_ISPRS_weak(config=None):
     print('Starting training ISPRS weakly supervised')
-    from multiprocessing import Process, Queue
-    queue = Queue()
-    p = Process(target=train_ISPRS_weak_main, args=(queue,config))
-    p.start()
-    res = queue.get()
-    queue.close()
-    p.join()
+    from concurrent.futures import ProcessPoolExecutor
+    executor = ProcessPoolExecutor(max_workers=1)
+    try:
+        future = executor.submit(train_ISPRS_weak_main, config)
+        res = future.result()
+    finally:
+        executor.shutdown(wait=True)
+
     print('Training done')
     print()
     return res
