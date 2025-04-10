@@ -1,7 +1,16 @@
 docker: nvidia/cuda:11.0.3-cudnn8-devel-ubuntu20.04 (11.0.3/ubuntu20.04/devel/cudnn8/Dockerfile)
 
+chsh -s /bin/bash
 apt update
-apt install sudo -y
+apt install sudo vim -y
+useradd zjj -p zjj
+usermod -a zjj -G sudo
+groupadd admin
+usermod -a zjj -G admin
+chown -R zjj:zjj /home/zjj
+su zjj
+chsh -s /bin/bash
+cd
 sudo apt upgrade -y
 sudo apt install python3-dev python3-pip python3-tk -y
 
@@ -25,3 +34,5 @@ sudo dpkg -i bottom_0.9.6_amd64.deb
 rm -rf bottom*
 
 source ~/.bashrc
+
+chsh -s /usr/bin/fish
